@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/QPDS-UI/static/css/main.cf8b36a0.css",
-    "main.js": "/QPDS-UI/static/js/main.16c082c3.js",
-    "static/js/453.d19c4306.chunk.js": "/QPDS-UI/static/js/453.d19c4306.chunk.js",
+    "main.css": "/QPDS-UI/static/css/main.dfc05287.css",
+    "main.js": "/QPDS-UI/static/js/main.b96f0011.js",
+    "static/js/453.66472266.chunk.js": "/QPDS-UI/static/js/453.66472266.chunk.js",
     "index.html": "/QPDS-UI/index.html",
-    "main.cf8b36a0.css.map": "/QPDS-UI/static/css/main.cf8b36a0.css.map",
-    "main.16c082c3.js.map": "/QPDS-UI/static/js/main.16c082c3.js.map",
-    "453.d19c4306.chunk.js.map": "/QPDS-UI/static/js/453.d19c4306.chunk.js.map"
+    "main.dfc05287.css.map": "/QPDS-UI/static/css/main.dfc05287.css.map",
+    "main.b96f0011.js.map": "/QPDS-UI/static/js/main.b96f0011.js.map",
+    "453.66472266.chunk.js.map": "/QPDS-UI/static/js/453.66472266.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.cf8b36a0.css",
-    "static/js/main.16c082c3.js"
+    "static/css/main.dfc05287.css",
+    "static/js/main.b96f0011.js"
   ]
 }
