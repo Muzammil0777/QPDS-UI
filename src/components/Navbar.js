@@ -1,36 +1,45 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { NavLink } from "react-router-dom";
+import { Menu, X } from "lucide-react"; // lightweight icons
+import "./Navbar.css";
 
-function Navbar() {
+const Navbar = () => {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const toggleMenu = () => setMenuOpen(!menuOpen);
+  const closeMenu = () => setMenuOpen(false);
+
   return (
-    <nav
-      style={{
-        background: "#111827",
-        color: "white",
-        padding: "15px 40px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        position: "sticky",
-        top: 0,
-        zIndex: 1000,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-      }}
-    >
-      <h2 style={{ margin: 0, color: "#fff", fontWeight: "bold" }}>QPDS</h2>
-      <div style={{ display: "flex", gap: "25px" }}>
-        <Link to="/" className="nav-link">
-          Home
-        </Link>
-        <Link to="/create-question" className="nav-link">
-          Create Question
-        </Link>
-        <Link to="/about" className="nav-link">
-          About Us
-        </Link>
+    <nav className="navbar">
+      <div className="navbar-container">
+        <h2 className="logo">QPDS</h2>
+
+        {/* Hamburger Icon (mobile) */}
+        <div className="menu-icon" onClick={toggleMenu}>
+          {menuOpen ? <X size={26} color="#fff" /> : <Menu size={26} color="#fff" />}
+        </div>
+
+        {/* Navigation Links */}
+        <ul className={`nav-links ${menuOpen ? "open" : ""}`}>
+          <li>
+            <NavLink to="/" onClick={closeMenu} end>
+              Home
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/create" onClick={closeMenu}>
+              Create Question
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/about" onClick={closeMenu}>
+              About
+            </NavLink>
+          </li>
+        </ul>
       </div>
     </nav>
   );
-}
+};
 
 export default Navbar;

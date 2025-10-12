@@ -10,10 +10,13 @@
     "@testing-library/user-event": "^13.5.0",
     "better-react-mathjax": "^2.3.0",
     "framer-motion": "^12.23.22",
+    "lucide-react": "^0.545.0",
     "mathjax": "^4.0.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
+    "quill": "^2.0.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-mathjax2": "^0.0.2",
+    "react-quill": "^2.0.0",
     "react-router-dom": "^7.9.3",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
@@ -25,7 +28,6 @@
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
-
   },
   "eslintConfig": {
     "extends": [

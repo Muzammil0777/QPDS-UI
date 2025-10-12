@@ -1,67 +1,26 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import CreateQuestion from "./pages/CreateQuestion";
-import About from "./pages/About";
-import "./index.css";
-
-function AnimatedRoutes() {
-  const location = useLocation();
-
-  return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route
-          path="/"
-          element={
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -30 }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
-            >
-              <Home />
-            </motion.div>
-          }
-        />
-        <Route
-          path="/create-question"
-          element={
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
-            >
-              <CreateQuestion />
-            </motion.div>
-          }
-        />
-        <Route
-          path="/about"
-          element={
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -30 }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
-            >
-              <About />
-            </motion.div>
-          }
-        />
-      </Routes>
-    </AnimatePresence>
-  );
-}
+import About from "./pages/About"; // optional, if you have it
 
 function App() {
   return (
     <Router>
       <Navbar />
-      <AnimatedRoutes />
+      <Routes>
+        {/* Default route — when user visits "/" */}
+        <Route path="/" element={<Home />} />
+
+        {/* Other pages */}
+        <Route path="/home" element={<Home />} />
+        <Route path="/create" element={<CreateQuestion />} />
+        <Route path="/about" element={<About />} />
+
+        {/* Redirect any unknown path to Home */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
     </Router>
   );
 }
