@@ -184,5 +184,9 @@ Built by students of M.S. Ramaiah University
 - Bloom's Taxonomy classification
 - Collaborative editing features
 
+## Admin Login Credentials
+Username : Muzammilmuzaffar18@gmail.com
+Password : Admin@123  
+
 
 **Note**: This is an academic project developed as part of the Question Paper Design System initiative at M.S. Ramaiah University.
