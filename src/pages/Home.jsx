@@ -5,7 +5,7 @@ function Home() {
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
-    navigate("/create-question");
+    navigate("/login");
   };
 
   return (
