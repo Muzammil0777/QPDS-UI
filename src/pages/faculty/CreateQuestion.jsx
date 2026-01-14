@@ -1,5 +1,6 @@
 // src/pages/CreateQuestion.js
 import React, { useEffect, useRef, useState } from "react";
+import { TextField, MenuItem } from '@mui/material';
 import EditorJS from "@editorjs/editorjs";
 import Header from "@editorjs/header";
 import List from "@editorjs/list";
@@ -243,6 +244,8 @@ export default function CreateQuestion() {
   const [availableCOs, setAvailableCOs] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedCO, setSelectedCO] = useState("");
+  const [marks, setMarks] = useState(5);
+  const [difficulty, setDifficulty] = useState("Medium");
 
   // Similarity Check State
   const [checking, setChecking] = useState(false);
@@ -312,12 +315,15 @@ export default function CreateQuestion() {
     if (!selectedSubject || !selectedCO) {
       return alert("Please select Subject and Course Outcome.");
     }
+    if (!marks) return alert("Please enter marks.");
 
     try {
       const content = await editorInstanceRef.current.save();
       const payload = {
-        subjectId: selectedSubject,
-        courseOutcomeId: selectedCO,
+        subjectId: parseInt(selectedSubject),
+        courseOutcomeId: parseInt(selectedCO),
+        marks: parseInt(marks),
+        difficulty: difficulty,
         editorData: content,
       };
 
@@ -380,7 +386,7 @@ export default function CreateQuestion() {
       }).join('\n');
 
       const res = await api.post('/faculty/ai/check-duplicate', {
-        subjectId: selectedSubject,
+        subjectId: parseInt(selectedSubject),
         questionText: text
       });
       setSimResult(res.data);
@@ -427,6 +433,39 @@ export default function CreateQuestion() {
             ))}
           </select>
         </label>
+      </div>
+
+      <div style={{
+        border: "1px solid #eef2f6",
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 12,
+        display: "flex",
+        gap: 12,
+        alignItems: "center",
+        flexWrap: "wrap",
+        background: "#fafafa"
+      }}>
+        <TextField
+          label="Marks"
+          type="number"
+          size="small"
+          value={marks}
+          onChange={(e) => setMarks(e.target.value)}
+          style={{ width: 100 }}
+        />
+        <TextField
+          select
+          label="Difficulty"
+          size="small"
+          value={difficulty}
+          onChange={(e) => setDifficulty(e.target.value)}
+          style={{ width: 150 }}
+        >
+          <MenuItem value="Easy">Easy</MenuItem>
+          <MenuItem value="Medium">Medium</MenuItem>
+          <MenuItem value="Hard">Hard</MenuItem>
+        </TextField>
       </div>
 
       <div id={holderId.current} style={{ border: "1px solid #e6e9ef", borderRadius: 8, minHeight: 360, padding: 12, background: "#fff" }}></div>
