@@ -4,7 +4,7 @@ A comprehensive, AI-powered system designed to streamline the entire lifecycle o
 
 ## 🚀 Live Demo
 
-- **Frontend (Vercel):** [QPDS-UI](https://qpgs-ui-muzammil0777s-projects.vercel.app/) _(Redirects to Login on Get Started)_
+- **Frontend (Vercel):** [QPDS-UI](https://qpds-ui.vercel.app/) _(Redirects to Login on Get Started)_
 - **Backend (Render):** [QPDS-API](https://qpds-ui.onrender.com)
 - **Database (Neon):** PostgreSQL (Managed)
 
