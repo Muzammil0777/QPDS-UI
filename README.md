@@ -1,192 +1,125 @@
-# QPDS-UI - Question Paper Design System
+# Question Paper Generation and Distribution System (QPDS)
 
-A web-based Question Paper Generation and Distribution System that enables faculty to create, manage, and distribute question papers efficiently.
+A comprehensive, AI-powered system designed to streamline the entire lifecycle of question paper management for educational institutions. QPDS enables faculty to collaboratively create, review, and distribute high-quality question papers while providing administrators with robust oversight tools.
 
-## 🎯 Overview
+## 🚀 Live Demo
 
-QPDS-UI is an AI-powered Question Paper Design System that helps automate question creation, validation, and secure distribution. The system provides an intuitive interface for faculty members to create questions with support for text, images, mathematical equations (MathML and LaTeX), and export them for further use.
+- **Frontend (Vercel):** [QPDS-UI](https://qpgs-ui-muzammil0777s-projects.vercel.app/) _(Redirects to Login on Get Started)_
+- **Backend (Render):** [QPDS-API](https://qpds-ui.onrender.com)
+- **Database (Neon):** PostgreSQL (Managed)
 
-## ✨ Features
+## ✨ Key Features
 
-- **Multi-format Question Support**: Create questions using text, images, MathML, and LaTeX
-- **Academic Organization**: Filter by academic year, semester, and subject code
-- **Flexible Input Methods**: 
-  - Individual question entry
-  - Bulk upload support
-- **Live Preview**: Real-time preview of questions with mathematical notation rendering
-- **Mathematical Equations**: Full support for MathML and LaTeX rendering using MathJax
-- **Export Functionality**: Save question sets as JSON files
-- **Smooth Animations**: Enhanced user experience with Framer Motion page transitions
-- **Responsive Design**: Mobile-friendly interface
+### 🎓 For Faculty
+- **Smart Question Creation:** 
+  - Rich text editor (EditorJS) with support for **text alignment**, images, tables, and lists.
+  - **Mathematical Equation Support**: Easy input for MathML and LaTeX equations using MathJax.
+- **AI-Assisted Tools:** Leverage AI (Google Gemini / Hugging Face) for optimizing question phrasing and generating alternatives.
+- **Dashboard:** View assigned subjects, manage draft questions, and track question approval status.
+- **Question Bank:** Organized repository of questions filterable by Academic Year, Semester, and Subject.
 
-## 🛠️ Tech Stack
+### 🛡️ For Administrators
+- **Faculty Management:** Approve new faculty registrations and manage user roles (Admin/Faculty).
+- **Subject Management:** Create and assign subjects to specific faculty members.
+- **Course Outcomes (COs):** Define and map Course Outcomes to subjects.
+- **Question Paper Generation:** Generate complete question papers based on blueprints and difficulty levels.
+- **Print-Ready Export:** Generate clean, standardized PDF outputs for printing.
 
-- **Frontend Framework**: React 18
-- **Routing**: React Router DOM v6
-- **Animations**: Framer Motion
-- **Math Rendering**: better-react-mathjax (MathJax integration)
-- **Styling**: Custom CSS
-- **Build Tool**: Create React App
+## 🛠️ Technology Stack
 
-## 📋 Prerequisites
+### Frontend
+- **Framework:** React 18 (Vite)
+- **Styling:** Material UI (MUI) + Custom CSS
+- **Editor:** EditorJS with custom Alignment Tunes
+- **State Management:** React Context API
+- **Routing:** React Router DOM v6
 
-Before you begin, ensure you have the following installed:
-- Node.js (v14.0.0 or higher)
-- npm (v6.0.0 or higher) or yarn (v1.22.0 or higher)
+### Backend
+- **Framework:** Flask (Python 3.11+)
+- **Database ORM:** SQLAlchemy
+- **Authentication:** JWT (JSON Web Tokens)
+- **Security:** Bcrypt hashing, CAPTCHA integration
+- **AI Integration:** Google Generative AI (Gemini), Hugging Face Hub
 
-## 🚀 Getting Started
+### Database & Cloud
+- **Database:** PostgreSQL (Neon Serverless)
+- **Hosting:** Vercel (Frontend), Render (Backend)
+- **Version Control:** GitHub
 
-### Installation
+## 🚀 Getting Started (Local Development)
 
-1. Clone the repository:
+### Prerequisites
+- Node.js (v18+)
+- Python (v3.11+)
+- PostgreSQL (Local or Cloud URL)
+
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/Muzammil0777/QPDS-UI.git
-```
-
-2. Navigate to the project directory:
-```bash
 cd QPDS-UI
 ```
 
-3. Install dependencies:
+### 2. Backend Setup
+```bash
+cd backend
+python -m venv venv
+# Windows
+.\venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+**Configure Environment Variables:**
+Create a `.env` file in the `backend` folder:
+```env
+DATABASE_URL=postgresql://user:password@localhost/qpds_db
+SECRET_KEY=your_secret_key
+FLASK_ENV=development
+GEMINI_API_KEY=your_gemini_key
+HF_API_KEY=your_huggingface_key
+```
+
+**Initialize Database:**
+```bash
+flask db upgrade
+# Create initial admin user
+python create_admin.py
+```
+
+**Run Server:**
+```bash
+flask run
+```
+
+### 3. Frontend Setup
+Open a new terminal in the root directory:
 ```bash
 npm install
-```
+# Remove windows-specific dependencies if on Linux/Mac
+# npm remove @rollup/rollup-win32-x64-msvc 
 
-### Running the Application
-
-Start the development server:
-```bash
 npm start
 ```
+The app will open at `http://localhost:3000`.
 
-The application will open at [http://localhost:3000](http://localhost:3000)
+## ☁️ Cloud Deployment
+This project is configured for seamless cloud deployment.
 
-### Building for Production
+### Backend (Render)
+- **Build Command:** `pip install -r requirements.txt`
+- **Start Command:** `flask db upgrade && gunicorn run:app`
+- **Env Vars:** `DATABASE_URL` (Internal Neon URL), `SECRET_KEY`, `GEMINI_API_KEY`, `HF_API_KEY`.
 
-Create an optimized production build:
-```bash
-npm run build
-```
+### Frontend (Vercel)
+- **Framework Preset:** Vite
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+- **Env Vars:** `VITE_API_URL` -> `https://your-render-backend.onrender.com`
 
-The build files will be generated in the `build/` folder.
+## 👥 Contributors
+Built by the students of M.S. Ramaiah University as part of the Question Paper Design System initiative.
 
-## 📁 Project Structure
-
-```
-QPDS-UI/
-├── public/
-├── src/
-│   ├── components/
-│   │   └── Navbar.js          # Navigation component
-│   ├── pages/
-│   │   ├── Home.js             # Landing page
-│   │   ├── CreateQuestion.js   # Question creation interface
-│   │   └── About.js            # About page
-│   ├── App.js                  # Main application component
-│   ├── App.css                 # Application styles
-│   ├── index.js                # Application entry point
-│   └── index.css               # Global styles
-├── package.json
-└── README.md
-```
-
-## 🎨 Pages
-
-### Home Page
-- Welcome screen with project introduction
-- Quick access to question creation portal
-
-### Create Question Page
-- **Department Criteria Section**: Select Academic Year, Semester, and Subject Code
-- **Input Type Selection**: Choose between individual or bulk question entry
-- **Question Input**: 
-  - Text input for question description
-  - Image upload support
-  - MathML input field
-  - LaTeX equation input
-  - Live preview of all content
-- **Export**: Save all questions as a JSON file
-
-### About Page
-- Information about QPDS
-- Project background and team details
-
-## 💡 Usage Guide
-
-### Creating Questions
-
-1. **Select Academic Details**:
-   - Choose Academic Year (e.g., 2024-25)
-   - Select Semester (1-8)
-   - Pick Subject Code
-
-2. **Choose Input Type**:
-   - Individual: Enter questions one by one
-   - Bulk: Upload multiple questions via file
-
-3. **Enter Questions**:
-   - Type question text
-   - Upload images if needed
-   - Add mathematical equations using MathML or LaTeX
-   - Preview your question in real-time
-
-4. **Save**:
-   - Click "Save as JSON" to export your question set
-
-### Mathematical Notation Examples
-
-**LaTeX Example**:
-```
-\frac{a}{b}
-```
-
-**MathML Example**:
-```xml
-<math>
-  <mfrac>
-    <mi>a</mi>
-    <mi>b</mi>
-  </mfrac>
-</math>
-```
-
-## 🔧 Available Scripts
-
-- `npm start` - Runs the app in development mode
-- `npm test` - Launches the test runner
-- `npm run build` - Builds the app for production
-- `npm run eject` - Ejects from Create React App (one-way operation)
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 👥 Team
-
-Built by students of M.S. Ramaiah University
-
-## 🚧 Future Enhancements
-
-- Backend API integration
-- Database support for question storage
-- User authentication and authorization
-- Question bank management
-- PDF export functionality
-- Advanced filtering and search
-- Question difficulty tagging
-- Bloom's Taxonomy classification
-- Collaborative editing features
-
-## Admin Login Credentials
-Username : Muzammilmuzaffar18@gmail.com
-Password : Admin@123  
-
-
-**Note**: This is an academic project developed as part of the Question Paper Design System initiative at M.S. Ramaiah University.
+---
+*Note: For the admin login credentials in the live demo, please contact the repository owner.*
