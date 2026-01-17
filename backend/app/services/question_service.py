@@ -5,13 +5,18 @@ from ..models import AcademicYear, Semester, Subject, Question
 
 def create_question(data, user_id):
     # Extract data
-    ay_label = data.get('academicYear')
-    sem_number = int(data.get('semester'))
-    sub_code = data.get('subcode')
     editor_data = data.get('editorData')
-    co_id = data.get('courseOutcomeId') # Expecting UUID string
-
+    co_id = data.get('courseOutcomeId') 
     subject_id = data.get('subjectId')
+    
+    # Optional fields
+    marks = data.get('marks')
+    difficulty = data.get('difficulty')
+
+    # Legacy fields (lazy extraction)
+    ay_label = None
+    sem_number = None
+    sub_code = None
 
     # 0. User & Approval Check
     from ..models import User, FacultySubject, CourseOutcome
@@ -122,6 +127,8 @@ def create_question(data, user_id):
             'semester': sem_number,
             'subcode': sub_code,
             'courseOutcomeId': co_id,
+            'marks': marks,
+            'difficulty': difficulty,
             'savedAt': datetime.utcnow().isoformat()
         }
 
