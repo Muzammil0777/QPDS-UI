@@ -203,7 +203,7 @@ def check_duplicate():
                  similar_ids.append(f"QID: {sliced_db_entries[i]['id']} ({int(score*100)}%) - {preview}")
 
         return jsonify({
-            "isDuplicate": max_score > 0.80,
+            "isDuplicate": bool(max_score > 0.80),
             "similarityScore": float(f"{max_score:.2f}"),
             "similarQuestions": similar_ids
         })
