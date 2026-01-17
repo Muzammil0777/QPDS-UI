@@ -54,6 +54,14 @@ def register():
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'error': 'Email already exists'}), 400
 
+    # Faculty Email Policy
+    if data['role'] == 'FACULTY':
+         import re
+         # Regex: Start with alphanumeric/dots/underscores, MUST end with .cs.et@msruas.ac.in
+         pattern = r'^[a-zA-Z0-9._]+(\.cs\.et@msruas\.ac\.in)$'
+         if not re.match(pattern, data['email']):
+              return jsonify({'error': 'Invalid email. Must be a faculty email (e.g., name.cs.et@msruas.ac.in)'}), 400
+
     # Verify CAPTCHA
     captcha_id = data.get('captchaId')
     captcha_input = data.get('captchaInput')

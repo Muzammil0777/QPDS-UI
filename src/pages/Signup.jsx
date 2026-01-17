@@ -39,6 +39,14 @@ export default function Signup() {
         e.preventDefault();
         setError('');
         setSuccess('');
+
+        // Email Validation
+        const emailRegex = /^[a-zA-Z0-9._]+(\.cs\.et@msruas\.ac\.in)$/;
+        if (!emailRegex.test(formData.email)) {
+            setError('Invalid email. Must be a faculty email (e.g., name.cs.et@msruas.ac.in)');
+            return;
+        }
+
         try {
             const payload = {
                 ...formData,
