@@ -320,8 +320,8 @@ export default function CreateQuestion() {
     try {
       const content = await editorInstanceRef.current.save();
       const payload = {
-        subjectId: parseInt(selectedSubject),
-        courseOutcomeId: parseInt(selectedCO),
+        subjectId: selectedSubject,
+        courseOutcomeId: selectedCO,
         marks: parseInt(marks),
         difficulty: difficulty,
         editorData: content,
@@ -386,7 +386,7 @@ export default function CreateQuestion() {
       }).join('\n');
 
       const res = await api.post('/faculty/ai/check-duplicate', {
-        subjectId: parseInt(selectedSubject),
+        subjectId: selectedSubject,
         questionText: text
       });
       setSimResult(res.data);
