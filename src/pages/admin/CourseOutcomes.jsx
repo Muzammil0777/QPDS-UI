@@ -25,7 +25,7 @@ export default function CourseOutcomes() {
     const fetchOutcomes = async (subjectId) => {
         if (!subjectId) return;
         try {
-            const response = await api.get(`/admin/course-outcomes/${subjectId}`);
+            const response = await api.get(`/admin/course-outcomes/subject/${subjectId}`);
             setOutcomes(response.data);
         } catch (error) {
             console.error('Failed to fetch COs', error);

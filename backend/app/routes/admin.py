@@ -208,7 +208,7 @@ def create_course_outcome():
         
     return jsonify({'message': f'Processed {len(data)} items. Created {created_count} new COs.', 'errors': errors}), 201
 
-@bp.route('/course-outcomes/<uuid:subject_id>', methods=['GET'])
+@bp.route('/course-outcomes/subject/<uuid:subject_id>', methods=['GET'])
 def get_course_outcomes(subject_id):
     outcomes = CourseOutcome.query.filter_by(subject_id=subject_id).all()
     return jsonify([co.to_dict() for co in outcomes]), 200
