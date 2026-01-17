@@ -392,7 +392,9 @@ export default function CreateQuestion() {
       setSimResult(res.data);
       setOpenSimDialog(true);
     } catch (err) {
-      alert('Failed to check similarity: ' + err.message);
+      console.error("Similarity check error:", err);
+      const msg = err.response?.data?.error || err.message;
+      alert('Failed to check similarity: ' + msg);
     } finally {
       setChecking(false);
     }
