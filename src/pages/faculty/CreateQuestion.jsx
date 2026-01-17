@@ -491,7 +491,7 @@ export default function CreateQuestion() {
             <div>
               {simResult.isDuplicate ? (
                 <Alert severity="warning" sx={{ mb: 2 }}>
-                  Potential Duplicate Detected! (Confidence: {(simResult.confidence * 100).toFixed(1)}%)
+                  Potential Duplicate Detected! (Confidence: {(simResult.similarityScore * 100).toFixed(1)}%)
                 </Alert>
               ) : (
                 <Alert severity="success" sx={{ mb: 2 }}>
