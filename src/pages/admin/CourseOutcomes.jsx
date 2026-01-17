@@ -38,9 +38,41 @@ export default function CourseOutcomes() {
         }
     };
 
+    const [editOpen, setEditOpen] = useState(false);
+    const [editData, setEditData] = useState({ id: '', description: '' });
+
     useEffect(() => {
         fetchOutcomes(selectedSubject);
     }, [selectedSubject]);
+
+    const handleEditClick = (co) => {
+        setEditData({ id: co.id, description: co.description });
+        setEditOpen(true);
+    };
+
+    const handleEditSave = async () => {
+        try {
+            await api.put(`/admin/course-outcomes/${editData.id}`, {
+                description: editData.description
+            });
+            setEditOpen(false);
+            fetchOutcomes(selectedSubject);
+        } catch (error) {
+            console.error('Update failed', error);
+            alert('Failed to update CO');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure?')) return;
+        try {
+            await api.delete(`/admin/course-outcomes/${id}`);
+            fetchOutcomes(selectedSubject);
+        } catch (error) {
+            console.error('Delete failed', error);
+            alert('Failed to delete CO');
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
