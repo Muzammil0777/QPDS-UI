@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, MenuItem, TextField, Button, Box, Table, TableBody, TableCell, TableHead, TableRow, Paper } from '@mui/material';
+import { Typography, MenuItem, TextField, Button, Box, Table, TableBody, TableCell, TableHead, TableRow, Paper, InputAdornment, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../../services/api';
 
 export default function CourseOutcomes() {
@@ -40,7 +42,7 @@ export default function CourseOutcomes() {
         try {
             await api.post('/admin/course-outcomes', {
                 subjectId: selectedSubject,
-                coCode: formData.co_code,
+                coCode: `CO${formData.co_code}`, // Prepend CO
                 description: formData.description
             });
             setFormData({ co_code: '', description: '' });
@@ -71,7 +73,16 @@ export default function CourseOutcomes() {
             {selectedSubject && (
                 <>
                     <Box component="form" onSubmit={handleSubmit} sx={{ mb: 4, display: 'flex', gap: 2 }}>
-                        <TextField label="CO Code (e.g. CO1)" value={formData.co_code} onChange={(e) => setFormData({ ...formData, co_code: e.target.value })} required />
+                        <TextField
+                            label="CO Number"
+                            type="number"
+                            value={formData.co_code}
+                            onChange={(e) => setFormData({ ...formData, co_code: e.target.value })}
+                            required
+                            InputProps={{
+                                startAdornment: <InputAdornment position="start">CO</InputAdornment>,
+                            }}
+                        />
                         <TextField label="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} fullWidth required />
                         <Button type="submit" variant="contained">Add CO</Button>
                     </Box>
@@ -82,6 +93,7 @@ export default function CourseOutcomes() {
                                 <TableRow>
                                     <TableCell>CO Code</TableCell>
                                     <TableCell>Description</TableCell>
+                                    <TableCell>Actions</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -89,11 +101,31 @@ export default function CourseOutcomes() {
                                     <TableRow key={co.id}>
                                         <TableCell>{co.coCode}</TableCell>
                                         <TableCell>{co.description}</TableCell>
+                                        <TableCell>
+                                            <IconButton onClick={() => handleEditClick(co)} color="primary"><EditIcon /></IconButton>
+                                            <IconButton onClick={() => handleDelete(co.id)} color="error"><DeleteIcon /></IconButton>
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
                     </Paper>
+
+                    <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
+                        <DialogTitle>Edit CO Description</DialogTitle>
+                        <DialogContent>
+                            <TextField
+                                label="Description"
+                                value={editData.description}
+                                onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                                fullWidth margin="dense" multiline rows={3}
+                            />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+                            <Button onClick={handleEditSave} variant="contained">Save</Button>
+                        </DialogActions>
+                    </Dialog>
                 </>
             )}
         </div>

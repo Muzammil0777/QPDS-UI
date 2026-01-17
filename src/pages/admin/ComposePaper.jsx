@@ -91,6 +91,11 @@ export default function ComposePaper() {
         }).join('<br/>');
     };
 
+    const getMarks = (q) => {
+        // Marks stored in editorData.marks or top level if strictly mapped (but we mapped to editorData)
+        return q.editorData?.marks || "";
+    };
+
     const handlePrint = useReactToPrint({
         contentRef: componentRef,
         documentTitle: paperTitle || 'Question Paper',
@@ -172,7 +177,14 @@ export default function ComposePaper() {
 
                                 <ListItemText
                                     primary={
-                                        <div dangerouslySetInnerHTML={{ __html: getQuestionText(q.editorData) }} />
+                                        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                                            <div dangerouslySetInnerHTML={{ __html: getQuestionText(q.editorData) }} style={{ flex: 1 }} />
+                                            {getMarks(q) && (
+                                                <Typography variant="body2" sx={{ fontWeight: 'bold', ml: 2, whiteSpace: 'nowrap' }}>
+                                                    [{getMarks(q)} Marks]
+                                                </Typography>
+                                            )}
+                                        </Box>
                                     }
                                     sx={{ margin: 0 }}
                                 />

@@ -93,9 +93,11 @@ export default function QuestionPaper() {
         setSaving(true);
         try {
             // Flatten questions
+            // Flatten questions
+            // generatedPaper.sectionA is now [{text, marks}, ...]
             const questionsToSave = [
-                ...(generatedPaper.sectionA?.map(q => ({ text: q, type: 'short' })) || []),
-                ...(generatedPaper.sectionB?.map(q => ({ text: q, type: 'long' })) || [])
+                ...(generatedPaper.sectionA?.map(q => ({ text: q.text, marks: q.marks, type: 'short' })) || []),
+                ...(generatedPaper.sectionB?.map(q => ({ text: q.text, marks: q.marks, type: 'long' })) || [])
             ];
 
             await api.post('/api/questions/bulk', {
@@ -217,7 +219,7 @@ export default function QuestionPaper() {
                             <List dense>
                                 {generatedPaper.sectionA?.map((q, idx) => (
                                     <ListItem key={idx}>
-                                        <ListItemText primary={`${idx + 1}. ${q}`} />
+                                        <ListItemText primary={`${idx + 1}. ${q.text} (${q.marks} Marks)`} />
                                     </ListItem>
                                 ))}
                             </List>
@@ -226,7 +228,7 @@ export default function QuestionPaper() {
                             <List dense>
                                 {generatedPaper.sectionB?.map((q, idx) => (
                                     <ListItem key={idx}>
-                                        <ListItemText primary={`${idx + 1}. ${q}`} />
+                                        <ListItemText primary={`${idx + 1}. ${q.text} (${q.marks} Marks)`} />
                                     </ListItem>
                                 ))}
                             </List>

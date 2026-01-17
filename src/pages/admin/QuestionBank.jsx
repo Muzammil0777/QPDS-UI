@@ -164,7 +164,8 @@ export default function QuestionBank() {
                                        Actually, currently we don't store Type explicitly in model. 
                                        We can show CO instead if available.
                                    */}
-                                    {q.courseOutcomeId ? "Mapped to CO" : "General"}
+                                    {/* Backend now sends coCode in Question.to_dict() */}
+                                    {q.coCode ? q.coCode : "General"}
                                 </TableCell>
                                 <TableCell align="right">
                                     <IconButton onClick={() => navigate(`/admin/edit-question/${q.id}`)} color="primary">

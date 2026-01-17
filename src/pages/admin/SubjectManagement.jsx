@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, TextField, Button, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Typography, TextField, Button, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../../services/api';
 
 export default function SubjectManagement() {
@@ -30,6 +32,38 @@ export default function SubjectManagement() {
         }
     };
 
+    // Edit/Delete Logic
+    const [editOpen, setEditOpen] = useState(false);
+    const [editData, setEditData] = useState({ id: '', code: '', name: '' });
+
+    const handleEditClick = (sub) => {
+        setEditData({ id: sub.id, code: sub.code, name: sub.name });
+        setEditOpen(true);
+    };
+
+    const handleEditSave = async () => {
+        try {
+            await api.put(`/api/subjects/${editData.id}`, {
+                code: editData.code,
+                name: editData.name
+            });
+            setEditOpen(false);
+            fetchSubjects();
+        } catch (err) {
+            alert('Update failed');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure? This might fail if questions are linked.")) return;
+        try {
+            await api.delete(`/api/subjects/${id}`);
+            fetchSubjects();
+        } catch (err) {
+            alert('Delete failed (Check if subject has related data)');
+        }
+    };
+
     return (
         <div>
             <Typography variant="h5" gutterBottom>Subject Management</Typography>
@@ -50,6 +84,7 @@ export default function SubjectManagement() {
                             <TableCell>Name</TableCell>
                             <TableCell>Semester</TableCell>
                             <TableCell>Academic Year</TableCell>
+                            <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -58,12 +93,38 @@ export default function SubjectManagement() {
                                 <TableCell>{sub.code}</TableCell>
                                 <TableCell>{sub.name}</TableCell>
                                 <TableCell>{sub.semester}</TableCell>
-                                <TableCell>{sub.academic_year}</TableCell>
+                                <TableCell>{sub.academicYear}</TableCell>
+                                <TableCell>
+                                    <IconButton onClick={() => handleEditClick(sub)} color="primary"><EditIcon /></IconButton>
+                                    <IconButton onClick={() => handleDelete(sub.id)} color="error"><DeleteIcon /></IconButton>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
+                <DialogTitle>Edit Subject</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        label="Code"
+                        value={editData.code}
+                        onChange={(e) => setEditData({ ...editData, code: e.target.value })}
+                        fullWidth margin="dense"
+                    />
+                    <TextField
+                        label="Name"
+                        value={editData.name}
+                        onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                        fullWidth margin="dense"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+                    <Button onClick={handleEditSave} variant="contained">Save</Button>
+                </DialogActions>
+            </Dialog>
         </div>
     );
 }

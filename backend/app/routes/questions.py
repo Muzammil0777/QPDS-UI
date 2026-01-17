@@ -86,6 +86,8 @@ def create_bulk_questions():
             if not q_text: 
                 continue
                 
+            q_marks = q_item.get('marks')
+
             # Construct minimal EditorJS block
             editor_data = {
                 "time": int(time.time() * 1000),
@@ -96,7 +98,8 @@ def create_bulk_questions():
                         "data": { "text": q_text }
                     }
                 ],
-                "version": "2.28.0"
+                "version": "2.28.0",
+                "marks": q_marks # Store marks in metadata
             }
             
             new_q = Question(

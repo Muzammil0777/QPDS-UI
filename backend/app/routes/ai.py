@@ -71,13 +71,13 @@ Difficulty: {difficulty}
 Requirements: Exactly {num_short} Short Questions and {num_long} Long Questions.
 
 Format:
-Section A: Short questions (2-3 lines)
-Section B: Long questions (8-12 lines)
+Section A: Short questions (2-3 lines). Assign marks (e.g., 2, 3, or 5).
+Section B: Long questions (8-12 lines). Assign marks (e.g., 8, 10, or 12).
 
 JSON Structure:
 {{
-  "sectionA": ["question 1", "question 2", ...],  // Must contain exactly {num_short} items
-  "sectionB": ["question 1", "question 2", ...],  // Must contain exactly {num_long} items
+  "sectionA": [ {{"text": "question 1", "marks": 5}}, ...],
+  "sectionB": [ {{"text": "question 1", "marks": 10}}, ...],
   "totalQuestions": {num_short + num_long}
 }}
 """

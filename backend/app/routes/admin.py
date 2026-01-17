@@ -79,6 +79,41 @@ def approve_faculty(faculty_id):
     db.session.commit()
     return jsonify({'message': f'Faculty {user.name} approved'}), 200
 
+@bp.route('/deny/<uuid:faculty_id>', methods=['POST'])
+def deny_faculty(faculty_id):
+    # Deny request = Delete the user account
+    user = User.query.get_or_404(faculty_id)
+    if user.role != 'FACULTY':
+         return jsonify({'error': 'User is not faculty'}), 400
+    
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'message': f'Faculty request for {user.name} denied/deleted'}), 200
+
+@bp.route('/faculty/<uuid:faculty_id>', methods=['PUT'])
+def update_faculty(faculty_id):
+    user = User.query.get_or_404(faculty_id)
+    data = request.get_json()
+    
+    if 'name' in data:
+        user.name = data['name']
+    if 'designation' in data:
+        user.designation = data['designation']
+    
+    db.session.commit()
+    return jsonify({'message': 'Faculty details updated'}), 200
+
+@bp.route('/faculty/<uuid:faculty_id>', methods=['DELETE'])
+def delete_faculty(faculty_id):
+    user = User.query.get_or_404(faculty_id)
+    
+    # Optional: Manually remove assignments if not cascaded
+    FacultySubject.query.filter_by(faculty_id=user.id).delete()
+    
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'message': 'Faculty deleted successfully'}), 200
+
 @bp.route('/assign-subject', methods=['POST'])
 def assign_subject():
     data = request.get_json()
@@ -177,3 +212,26 @@ def create_course_outcome():
 def get_course_outcomes(subject_id):
     outcomes = CourseOutcome.query.filter_by(subject_id=subject_id).all()
     return jsonify([co.to_dict() for co in outcomes]), 200
+
+@bp.route('/course-outcomes/<uuid:co_id>', methods=['PUT'])
+def update_course_outcome(co_id):
+    # check_admin decorator handles auth
+    co = CourseOutcome.query.get_or_404(co_id)
+    data = request.get_json()
+    
+    if 'description' in data:
+        co.description = data['description']
+        
+    db.session.commit()
+    return jsonify({'message': 'Course Outcome updated'}), 200
+
+@bp.route('/course-outcomes/<uuid:co_id>', methods=['DELETE'])
+def delete_course_outcome(co_id):
+    co = CourseOutcome.query.get_or_404(co_id)
+    try:
+        db.session.delete(co)
+        db.session.commit()
+        return jsonify({'message': 'Course Outcome deleted'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400

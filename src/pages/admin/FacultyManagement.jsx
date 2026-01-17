@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Chip } from '@mui/material';
+import { Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Box } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../../services/api';
 
 export default function FacultyManagement() {
@@ -30,6 +32,48 @@ export default function FacultyManagement() {
             fetchFaculty();
         } catch (error) {
             alert('Approval failed');
+        }
+    };
+
+    const handleDeny = async (id) => {
+        if (!window.confirm("Are you sure you want to deny (delete) this request?")) return;
+        try {
+            await api.post(`/admin/deny/${id}`);
+            fetchFaculty();
+        } catch (error) {
+            alert('Deny failed');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this faculty member? This will remove all their subject assignments.")) return;
+        try {
+            await api.delete(`/admin/faculty/${id}`);
+            fetchFaculty();
+        } catch (error) {
+            alert('Delete failed');
+        }
+    };
+
+    // Edit Logic
+    const [editOpen, setEditOpen] = useState(false);
+    const [editData, setEditData] = useState({ id: '', name: '', designation: '' });
+
+    const handleEditClick = (fac) => {
+        setEditData({ id: fac.id, name: fac.name, designation: fac.designation || '' });
+        setEditOpen(true);
+    };
+
+    const handleEditSave = async () => {
+        try {
+            await api.put(`/admin/faculty/${editData.id}`, {
+                name: editData.name,
+                designation: editData.designation
+            });
+            setEditOpen(false);
+            fetchFaculty();
+        } catch (err) {
+            alert('Update failed');
         }
     };
 
@@ -68,9 +112,24 @@ export default function FacultyManagement() {
                                 </TableCell>
                                 <TableCell>
                                     {!fac.isApproved && (
-                                        <Button variant="contained" size="small" onClick={() => handleApprove(fac.id)}>
-                                            Approve
-                                        </Button>
+                                        <Box>
+                                            <Button variant="contained" size="small" onClick={() => handleApprove(fac.id)} sx={{ mr: 1 }}>
+                                                Approve
+                                            </Button>
+                                            <Button variant="contained" color="error" size="small" onClick={() => handleDeny(fac.id)}>
+                                                Deny
+                                            </Button>
+                                        </Box>
+                                    )}
+                                    {fac.isApproved && (
+                                        <Box>
+                                            <IconButton onClick={() => handleEditClick(fac)} color="primary">
+                                                <EditIcon />
+                                            </IconButton>
+                                            <IconButton onClick={() => handleDelete(fac.id)} color="error">
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </Box>
                                     )}
                                 </TableCell>
                             </TableRow>
@@ -86,6 +145,39 @@ export default function FacultyManagement() {
             <Typography variant="caption" color="textSecondary" sx={{ mt: 2, display: 'block', textAlign: 'center' }}>
                 Debug: {debugInfo}
             </Typography>
+
+            {/* Edit Dialog */}
+            <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
+                <DialogTitle>Edit Faculty</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Name"
+                        fullWidth
+                        value={editData.name}
+                        onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                    />
+                    <TextField
+                        select
+                        margin="dense"
+                        label="Designation"
+                        fullWidth
+                        value={editData.designation}
+                        onChange={(e) => setEditData({ ...editData, designation: e.target.value })}
+                    >
+                        {['HOD', 'Professor', 'Associate Professor', 'Assistant Professor'].map((option) => (
+                            <MenuItem key={option} value={option}>
+                                {option}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+                    <Button onClick={handleEditSave} variant="contained">Save</Button>
+                </DialogActions>
+            </Dialog>
         </div>
     );
 }

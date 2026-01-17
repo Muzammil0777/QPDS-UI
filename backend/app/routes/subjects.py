@@ -84,3 +84,39 @@ def create_subject():
 def get_subject_outcomes(subject_id):
     outcomes = CourseOutcome.query.filter_by(subject_id=subject_id).all()
     return jsonify([co.to_dict() for co in outcomes]), 200
+
+@bp.route('/<uuid:subject_id>', methods=['PUT'])
+@jwt_required()
+def update_subject(subject_id):
+    claims = get_jwt()
+    if claims.get('role') != 'ADMIN':
+        return jsonify({'error': 'Admin required'}), 403
+        
+    subject = Subject.query.get_or_404(subject_id)
+    data = request.get_json()
+    
+    if 'code' in data:
+        subject.code = data['code']
+    if 'name' in data:
+        subject.name = data['name']
+    # Not implementing semester/AY update for now as it involves ID lookups, can skip for simple edit
+    
+    db.session.commit()
+    return jsonify({'message': 'Subject updated'}), 200
+
+@bp.route('/<uuid:subject_id>', methods=['DELETE'])
+@jwt_required()
+def delete_subject(subject_id):
+    claims = get_jwt()
+    if claims.get('role') != 'ADMIN':
+        return jsonify({'error': 'Admin required'}), 403
+
+    subject = Subject.query.get_or_404(subject_id)
+    
+    try:
+        db.session.delete(subject)
+        db.session.commit()
+        return jsonify({'message': 'Subject deleted'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Cannot delete subject (likely has related data)'}), 400

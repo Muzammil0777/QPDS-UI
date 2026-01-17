@@ -132,6 +132,7 @@ class Question(db.Model):
             "academicYear": self.subject.academic_year.label,
             "semester": self.subject.semester.number,
             "courseOutcomeId": str(self.course_outcome_id) if self.course_outcome_id else None,
+            "coCode": self.course_outcome.co_code if self.course_outcome else None,
             "editorData": self.editor_data,
             "createdAt": self.created_at.isoformat()
         }
