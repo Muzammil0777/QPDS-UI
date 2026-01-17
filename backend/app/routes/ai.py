@@ -114,7 +114,13 @@ def check_duplicate():
         if not subject_id or not question_text:
             return jsonify({'error': 'Missing required fields'}), 400
 
-        existing_questions = Question.query.filter_by(subject_id=subject_id).all()
+        import uuid
+        try:
+             s_uuid = uuid.UUID(str(subject_id))
+        except ValueError:
+             return jsonify({'error': 'Invalid subjectId format'}), 400
+
+        existing_questions = Question.query.filter_by(subject_id=s_uuid).all()
         
         db_entries = []
         for q in existing_questions:
@@ -178,7 +184,13 @@ def check_duplicate():
              v1 = target_emb
              
         for i, emb_data in enumerate(db_embeddings_raw):
-             v2 = emb_data
+             # Flatten if nested
+             if isinstance(v1, list) and len(v1) == 1 and isinstance(v1[0], list): v1 = v1[0]
+             if isinstance(v2, list) and len(v2) == 1 and isinstance(v2[0], list): v2 = v2[0]
+
+             if len(v1) != len(v2):
+                 continue # Skip dimension mismatch
+
              score = cosine_similarity(v1, v2)
              
              if score > max_score:
