@@ -26,7 +26,12 @@ export default function CourseOutcomes() {
         if (!subjectId) return;
         try {
             const response = await api.get(`/admin/course-outcomes/subject/${subjectId}`);
-            setOutcomes(response.data);
+            if (Array.isArray(response.data)) {
+                setOutcomes(response.data);
+            } else {
+                console.error("API returned non-array:", response.data);
+                setOutcomes([]);
+            }
         } catch (error) {
             console.error('Failed to fetch COs', error);
             setOutcomes([]);
@@ -97,7 +102,7 @@ export default function CourseOutcomes() {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {outcomes.map((co) => (
+                                {Array.isArray(outcomes) && outcomes.map((co) => (
                                     <TableRow key={co.id}>
                                         <TableCell>{co.coCode}</TableCell>
                                         <TableCell>{co.description}</TableCell>
