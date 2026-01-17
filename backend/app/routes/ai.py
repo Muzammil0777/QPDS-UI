@@ -184,6 +184,8 @@ def check_duplicate():
              v1 = target_emb
              
         for i, emb_data in enumerate(db_embeddings_raw):
+             v2 = emb_data
+             
              # Flatten if nested
              if isinstance(v1, list) and len(v1) == 1 and isinstance(v1[0], list): v1 = v1[0]
              if isinstance(v2, list) and len(v2) == 1 and isinstance(v2[0], list): v2 = v2[0]
