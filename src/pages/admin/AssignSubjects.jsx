@@ -16,7 +16,7 @@ export default function AssignSubjects() {
                     api.get('/admin/faculty'),
                     api.get('/api/subjects')
                 ]);
-                setFaculty(facRes.data.filter(f => f.isApproved)); // Only approved faculty
+                setFaculty(facRes.data.filter(f => f.isApproved && f.isActive)); // Only approved and active faculty
                 setSubjects(subRes.data);
             } catch (error) {
                 console.error('Data fetch failed', error);

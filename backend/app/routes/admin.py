@@ -145,6 +145,9 @@ def assign_subject():
     if faculty.role != 'FACULTY':
         return jsonify({'error': 'User is not legitimate faculty'}), 400
         
+    if hasattr(faculty, 'is_active') and not faculty.is_active:
+        return jsonify({'error': 'Cannot assign subject to deactivated faculty'}), 400
+        
     # Check previous assignment
     exists = FacultySubject.query.filter_by(faculty_id=faculty.id, subject_id=subject.id).first()
     if exists:
