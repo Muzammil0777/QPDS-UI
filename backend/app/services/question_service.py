@@ -132,10 +132,15 @@ def create_question(data, user_id):
             'savedAt': datetime.utcnow().isoformat()
         }
 
+    # Extract clean difficulty to match ENUM
+    clean_difficulty = difficulty.upper() if difficulty and difficulty.upper() in ["EASY", "MEDIUM", "HARD"] else "MEDIUM"
+
     question = Question(
         subject_id=subject.id,
         course_outcome_id=co_uuid if co_id else None,
         creator_id=user.id,
+        source="MANUAL",
+        difficulty=clean_difficulty,
         editor_data=editor_data
     )
     db.session.add(question)

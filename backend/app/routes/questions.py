@@ -66,6 +66,16 @@ def create_bulk_questions():
         
     try:
         user_id = get_jwt_identity()
+        from ..models import User, db
+        user = User.query.get(user_id)
+        if not user or user.role != 'ADMIN':
+            return jsonify({'error': 'Unauthorized: Only admins can bulk save AI questions'}), 403
+
+        # Optional metadata
+        difficulty = data.get('difficulty', 'MEDIUM').upper()
+        if difficulty not in ["EASY", "MEDIUM", "HARD"]:
+            difficulty = "MEDIUM"
+
         # Simple bulk creation logic
         saved_count = 0
         
@@ -106,10 +116,11 @@ def create_bulk_questions():
                 subject_id=subject_id,
                 course_outcome_id=assigned_co_id, # Optional
                 creator_id=user_id,
+                source="AI",
+                difficulty=difficulty,
                 editor_data=editor_data,
                 created_at=datetime.utcnow()
             )
-            from ..models import db
             db.session.add(new_q)
             saved_count += 1
             
@@ -125,11 +136,21 @@ def create_bulk_questions():
 def get_questions():
     # Allow filtering by subject_id
     subject_id = request.args.get('subjectId')
+    difficulty = request.args.get('difficulty')
+    source = request.args.get('source')
+    creator_id = request.args.get('creatorId')
     
+    query = Question.query
     if subject_id:
-        questions = Question.query.filter_by(subject_id=subject_id).order_by(Question.created_at.desc()).all()
-    else:
-        questions = Question.query.order_by(Question.created_at.desc()).all()
+        query = query.filter_by(subject_id=subject_id)
+    if difficulty:
+        query = query.filter_by(difficulty=difficulty)
+    if source:
+        query = query.filter_by(source=source)
+    if creator_id:
+        query = query.filter_by(creator_id=creator_id)
+        
+    questions = query.order_by(Question.created_at.desc()).all()
         
     return jsonify([q.to_dict() for q in questions]), 200
 

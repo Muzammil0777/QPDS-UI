@@ -245,7 +245,7 @@ export default function CreateQuestion() {
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedCO, setSelectedCO] = useState("");
   const [marks, setMarks] = useState(5);
-  const [difficulty, setDifficulty] = useState("Medium");
+  const [difficulty, setDifficulty] = useState("MEDIUM");
 
   // Similarity Check State
   const [checking, setChecking] = useState(false);
@@ -464,9 +464,9 @@ export default function CreateQuestion() {
           onChange={(e) => setDifficulty(e.target.value)}
           style={{ width: 150 }}
         >
-          <MenuItem value="Easy">Easy</MenuItem>
-          <MenuItem value="Medium">Medium</MenuItem>
-          <MenuItem value="Hard">Hard</MenuItem>
+          <MenuItem value="EASY">Easy</MenuItem>
+          <MenuItem value="MEDIUM">Medium</MenuItem>
+          <MenuItem value="HARD">Hard</MenuItem>
         </TextField>
       </div>
 

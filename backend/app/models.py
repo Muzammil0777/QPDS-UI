@@ -121,7 +121,9 @@ class Question(db.Model):
     id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
     subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=False)
     course_outcome_id = db.Column(db.Uuid, db.ForeignKey('course_outcomes.id'), nullable=True)
-    creator_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=True)
+    creator_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=False)
+    source = db.Column(db.String(10), nullable=False, default="MANUAL")
+    difficulty = db.Column(db.String(10), nullable=False, default="MEDIUM")
     editor_data = db.Column(JSON().with_variant(JSONB, 'postgresql'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -138,6 +140,9 @@ class Question(db.Model):
             "courseOutcomeId": str(self.course_outcome_id) if self.course_outcome_id else None,
             "coCode": self.course_outcome.co_code if self.course_outcome else None,
             "creatorId": str(self.creator_id) if self.creator_id else None,
+            "creatorName": self.creator.name if self.creator else None,
+            "source": self.source,
+            "difficulty": self.difficulty,
             "editorData": self.editor_data,
             "createdAt": self.created_at.isoformat()
         }

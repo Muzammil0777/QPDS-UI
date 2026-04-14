@@ -20,8 +20,18 @@ export default function QuestionBank() {
 
     const [questions, setQuestions] = useState([]);
     const [selectedQuestions, setSelectedQuestions] = useState([]);
+    const [filterDifficulty, setFilterDifficulty] = useState('');
+    const [filterSource, setFilterSource] = useState('');
+    const [filterCreator, setFilterCreator] = useState('');
     const [confirmDelete, setConfirmDelete] = useState(null);
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+
+    const filteredQuestions = questions.filter(q => {
+        if (filterDifficulty && q.difficulty !== filterDifficulty) return false;
+        if (filterSource && q.source !== filterSource) return false;
+        if (filterCreator && !q.creatorName?.toLowerCase().includes(filterCreator.toLowerCase())) return false;
+        return true;
+    });
 
     useEffect(() => {
         fetchSubjects();
@@ -125,6 +135,42 @@ export default function QuestionBank() {
                         </Button>
                     )}
                 </CardContent>
+                {selectedSubject && (
+                    <CardContent sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', pt: 0 }}>
+                        <TextField
+                            select
+                            size="small"
+                            label="Filter Difficulty"
+                            value={filterDifficulty}
+                            onChange={(e) => setFilterDifficulty(e.target.value)}
+                            sx={{ minWidth: 150 }}
+                        >
+                            <MenuItem value="">All</MenuItem>
+                            <MenuItem value="EASY">EASY</MenuItem>
+                            <MenuItem value="MEDIUM">MEDIUM</MenuItem>
+                            <MenuItem value="HARD">HARD</MenuItem>
+                        </TextField>
+                        <TextField
+                            select
+                            size="small"
+                            label="Filter Source"
+                            value={filterSource}
+                            onChange={(e) => setFilterSource(e.target.value)}
+                            sx={{ minWidth: 150 }}
+                        >
+                            <MenuItem value="">All</MenuItem>
+                            <MenuItem value="AI">AI</MenuItem>
+                            <MenuItem value="MANUAL">MANUAL</MenuItem>
+                        </TextField>
+                        <TextField
+                            size="small"
+                            label="Search Creator"
+                            value={filterCreator}
+                            onChange={(e) => setFilterCreator(e.target.value)}
+                            sx={{ minWidth: 200 }}
+                        />
+                    </CardContent>
+                )}
             </Card>
 
             <Card>
@@ -133,21 +179,24 @@ export default function QuestionBank() {
                         <TableRow>
                             <TableCell padding="checkbox">
                                 <Checkbox
-                                    checked={questions.length > 0 && selectedQuestions.length === questions.length}
-                                    indeterminate={selectedQuestions.length > 0 && selectedQuestions.length < questions.length}
+                                    checked={filteredQuestions.length > 0 && selectedQuestions.length === filteredQuestions.length}
+                                    indeterminate={selectedQuestions.length > 0 && selectedQuestions.length < filteredQuestions.length}
                                     onChange={(e) => {
-                                        if (e.target.checked) setSelectedQuestions(questions.map(q => q.id));
+                                        if (e.target.checked) setSelectedQuestions(filteredQuestions.map(q => q.id));
                                         else setSelectedQuestions([]);
                                     }}
                                 />
                             </TableCell>
-                            <TableCell width="60%">Question Preview</TableCell>
+                            <TableCell width="40%">Question Preview</TableCell>
                             <TableCell>Type/CO</TableCell>
+                            <TableCell>Difficulty</TableCell>
+                            <TableCell>Source</TableCell>
+                            <TableCell>Creator</TableCell>
                             <TableCell align="right">Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {questions.length > 0 ? questions.map((q) => (
+                        {filteredQuestions.length > 0 ? filteredQuestions.map((q) => (
                             <TableRow key={q.id}>
                                 <TableCell padding="checkbox">
                                     <Checkbox
@@ -159,13 +208,28 @@ export default function QuestionBank() {
                                     <div dangerouslySetInnerHTML={{ __html: getPreviewText(q.editorData) }} />
                                 </TableCell>
                                 <TableCell>
-                                    {/* Backend doesn't send explicit Type (Short/Long) in Question Model yet, 
-                                       usually inferred or stored in editorData? 
-                                       Actually, currently we don't store Type explicitly in model. 
-                                       We can show CO instead if available.
-                                   */}
-                                    {/* Backend now sends coCode in Question.to_dict() */}
                                     {q.coCode ? q.coCode : "General"}
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{
+                                        px: 1, py: 0.5, borderRadius: 1, display: 'inline-block', fontSize: '0.85rem', fontWeight: 'bold',
+                                        backgroundColor: q.difficulty === 'EASY' ? '#e8f5e9' : q.difficulty === 'MEDIUM' ? '#fff3e0' : '#ffebee',
+                                        color: q.difficulty === 'EASY' ? '#2e7d32' : q.difficulty === 'MEDIUM' ? '#ed6c02' : '#c62828'
+                                    }}>
+                                        {q.difficulty}
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Box sx={{
+                                        px: 1, py: 0.5, borderRadius: 1, display: 'inline-block', fontSize: '0.85rem', fontWeight: 'bold',
+                                        backgroundColor: q.source === 'AI' ? '#e3f2fd' : '#f5f5f5',
+                                        color: q.source === 'AI' ? '#1565c0' : '#616161'
+                                    }}>
+                                        {q.source}
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    {q.creatorName || "Unknown"}
                                 </TableCell>
                                 <TableCell align="right">
                                     <IconButton onClick={() => navigate(`/admin/edit-question/${q.id}`)} color="primary">
@@ -178,8 +242,8 @@ export default function QuestionBank() {
                             </TableRow>
                         )) : (
                             <TableRow>
-                                <TableCell colSpan={3} align="center">
-                                    {selectedSubject ? "No questions found for this subject." : "Please select a subject."}
+                                <TableCell colSpan={7} align="center">
+                                    {selectedSubject ? "No questions match your filters or found for this subject." : "Please select a subject."}
                                 </TableCell>
                             </TableRow>
                         )}
