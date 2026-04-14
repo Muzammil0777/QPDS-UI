@@ -105,13 +105,9 @@ def create_bulk_questions():
             new_q = Question(
                 subject_id=subject_id,
                 course_outcome_id=assigned_co_id, # Optional
+                creator_id=user_id,
                 editor_data=editor_data,
                 created_at=datetime.utcnow()
-                # model doesn't seem to have faculty_id column in the output I saw?
-                # Checked models.py: Question has subject_id, co_id, editor_data. Doesn't show faculty_id?
-                # Wait, I saw models.py output lines 116-138.
-                # It does NOT verify faculty_id. It might trigger error if I try to set it and column doesn't exist.
-                # I will NOT set faculty_id based on viewing models.py just now.
             )
             from ..models import db
             db.session.add(new_q)

@@ -121,6 +121,9 @@ def login():
     if not user.is_approved:
         return jsonify({'error': 'Account not approved by Admin'}), 403
         
+    if hasattr(user, 'is_active') and not user.is_active:
+        return jsonify({'error': 'Your account has been deactivated. Please contact admin.'}), 403
+        
     # Create Token
     token = create_access_token(identity=str(user.id), additional_claims={'role': user.role})
     

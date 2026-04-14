@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Box } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import BlockIcon from '@mui/icons-material/Block';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import api from '../../services/api';
 
 export default function FacultyManagement() {
@@ -45,13 +46,23 @@ export default function FacultyManagement() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this faculty member? This will remove all their subject assignments.")) return;
+    const handleDeactivate = async (id) => {
+        if (!window.confirm("Are you sure you want to deactivate this faculty member? They will not be able to log in, but their questions will remain.")) return;
         try {
-            await api.delete(`/admin/faculty/${id}`);
+            await api.put(`/admin/deactivate-user/${id}`);
             fetchFaculty();
         } catch (error) {
-            alert('Delete failed');
+            alert('Deactivate failed');
+        }
+    };
+
+    const handleReactivate = async (id) => {
+        if (!window.confirm("Are you sure you want to reactivate this faculty member?")) return;
+        try {
+            await api.put(`/admin/reactivate-user/${id}`);
+            fetchFaculty();
+        } catch (error) {
+            alert('Reactivate failed');
         }
     };
 
@@ -94,7 +105,7 @@ export default function FacultyManagement() {
                     </TableHead>
                     <TableBody>
                         {faculty.map((fac) => (
-                            <TableRow key={fac.id}>
+                            <TableRow key={fac.id} sx={{ opacity: fac.isApproved && !fac.isActive ? 0.5 : 1 }}>
                                 <TableCell>{fac.name}</TableCell>
                                 <TableCell>
                                     {fac.subjects && fac.subjects.length > 0 ? (
@@ -108,7 +119,13 @@ export default function FacultyManagement() {
                                 <TableCell>{fac.email}</TableCell>
                                 <TableCell>{fac.designation}</TableCell>
                                 <TableCell>
-                                    <Chip label={fac.isApproved ? "Approved" : "Pending"} color={fac.isApproved ? "success" : "warning"} />
+                                    {!fac.isApproved ? (
+                                        <Chip label="Pending" color="warning" />
+                                    ) : fac.isActive ? (
+                                        <Chip label="Active" color="success" />
+                                    ) : (
+                                        <Chip label="Deactivated" color="default" />
+                                    )}
                                 </TableCell>
                                 <TableCell>
                                     {!fac.isApproved && (
@@ -123,12 +140,18 @@ export default function FacultyManagement() {
                                     )}
                                     {fac.isApproved && (
                                         <Box>
-                                            <IconButton onClick={() => handleEditClick(fac)} color="primary">
+                                            <IconButton onClick={() => handleEditClick(fac)} color="primary" title="Edit">
                                                 <EditIcon />
                                             </IconButton>
-                                            <IconButton onClick={() => handleDelete(fac.id)} color="error">
-                                                <DeleteIcon />
-                                            </IconButton>
+                                            {fac.isActive ? (
+                                                <IconButton onClick={() => handleDeactivate(fac.id)} color="warning" title="Deactivate">
+                                                    <BlockIcon />
+                                                </IconButton>
+                                            ) : (
+                                                <IconButton onClick={() => handleReactivate(fac.id)} color="success" title="Reactivate">
+                                                    <CheckCircleIcon />
+                                                </IconButton>
+                                            )}
                                         </Box>
                                     )}
                                 </TableCell>

@@ -135,6 +135,7 @@ def create_question(data, user_id):
     question = Question(
         subject_id=subject.id,
         course_outcome_id=co_uuid if co_id else None,
+        creator_id=user.id,
         editor_data=editor_data
     )
     db.session.add(question)

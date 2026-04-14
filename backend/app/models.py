@@ -63,6 +63,7 @@ class User(db.Model):
     designation = db.Column(db.String(50)) # 'HOD','Professor','Associate Professor','Assistant Professor'
     department = db.Column(db.String(50)) # 'CSE'
     is_approved = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)
     profile_picture = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -75,6 +76,7 @@ class User(db.Model):
             "designation": self.designation,
             "department": self.department,
             "isApproved": self.is_approved,
+            "isActive": self.is_active,
             "profilePicture": self.profile_picture
         }
 
@@ -119,11 +121,13 @@ class Question(db.Model):
     id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
     subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=False)
     course_outcome_id = db.Column(db.Uuid, db.ForeignKey('course_outcomes.id'), nullable=True)
+    creator_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=True)
     editor_data = db.Column(JSON().with_variant(JSONB, 'postgresql'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     course_outcome = db.relationship('CourseOutcome', backref='questions')
+    creator = db.relationship('User', backref='questions')
 
     def to_dict(self):
         return {
@@ -133,6 +137,7 @@ class Question(db.Model):
             "semester": self.subject.semester.number,
             "courseOutcomeId": str(self.course_outcome_id) if self.course_outcome_id else None,
             "coCode": self.course_outcome.co_code if self.course_outcome else None,
+            "creatorId": str(self.creator_id) if self.creator_id else None,
             "editorData": self.editor_data,
             "createdAt": self.created_at.isoformat()
         }

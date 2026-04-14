@@ -103,16 +103,25 @@ def update_faculty(faculty_id):
     db.session.commit()
     return jsonify({'message': 'Faculty details updated'}), 200
 
-@bp.route('/faculty/<uuid:faculty_id>', methods=['DELETE'])
-def delete_faculty(faculty_id):
+@bp.route('/deactivate-user/<uuid:faculty_id>', methods=['PUT'])
+def deactivate_faculty(faculty_id):
     user = User.query.get_or_404(faculty_id)
-    
-    # Optional: Manually remove assignments if not cascaded
-    FacultySubject.query.filter_by(faculty_id=user.id).delete()
-    
-    db.session.delete(user)
+    if user.role != 'FACULTY':
+        return jsonify({'error': 'User is not faculty'}), 400
+        
+    user.is_active = False
     db.session.commit()
-    return jsonify({'message': 'Faculty deleted successfully'}), 200
+    return jsonify({'message': f'Faculty {user.name} has been deactivated'}), 200
+
+@bp.route('/reactivate-user/<uuid:faculty_id>', methods=['PUT'])
+def reactivate_faculty(faculty_id):
+    user = User.query.get_or_404(faculty_id)
+    if user.role != 'FACULTY':
+        return jsonify({'error': 'User is not faculty'}), 400
+        
+    user.is_active = True
+    db.session.commit()
+    return jsonify({'message': f'Faculty {user.name} has been reactivated'}), 200
 
 @bp.route('/assign-subject', methods=['POST'])
 def assign_subject():
