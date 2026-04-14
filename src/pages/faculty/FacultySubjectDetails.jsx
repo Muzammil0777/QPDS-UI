@@ -59,6 +59,9 @@ export default function FacultySubjectDetails() {
                             <TableRow>
                                 <TableCell>Question Info</TableCell>
                                 <TableCell>CO Mapped</TableCell>
+                                <TableCell>Difficulty</TableCell>
+                                <TableCell>Source</TableCell>
+                                <TableCell>Creator</TableCell>
                                 <TableCell>Created At</TableCell>
                             </TableRow>
                         </TableHead>
@@ -79,11 +82,32 @@ export default function FacultySubjectDetails() {
                                         {/* We can match with `cos` list */}
                                         {cos.find(c => c.id === q.courseOutcomeId)?.coCode || "-"}
                                     </TableCell>
+                                    <TableCell>
+                                        <Box sx={{
+                                            px: 1, py: 0.5, borderRadius: 1, display: 'inline-block', fontSize: '0.85rem', fontWeight: 'bold',
+                                            backgroundColor: q.difficulty === 'EASY' ? '#e8f5e9' : q.difficulty === 'MEDIUM' ? '#fff3e0' : '#ffebee',
+                                            color: q.difficulty === 'EASY' ? '#2e7d32' : q.difficulty === 'MEDIUM' ? '#ed6c02' : '#c62828'
+                                        }}>
+                                            {q.difficulty}
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{
+                                            px: 1, py: 0.5, borderRadius: 1, display: 'inline-block', fontSize: '0.85rem', fontWeight: 'bold',
+                                            backgroundColor: q.source === 'AI' ? '#e3f2fd' : '#f5f5f5',
+                                            color: q.source === 'AI' ? '#1565c0' : '#616161'
+                                        }}>
+                                            {q.source}
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        {q.creatorName || "Unknown"}
+                                    </TableCell>
                                     <TableCell>{new Date(q.createdAt).toLocaleDateString()}</TableCell>
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={3}>No questions found.</TableCell>
+                                    <TableCell colSpan={6}>No questions found.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
