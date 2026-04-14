@@ -87,10 +87,20 @@ export default function QuestionBank() {
         });
     };
 
-    const handleCompose = () => {
-        // Navigate to compose page with selected question IDs
-        // We can pass state through navigation
-        navigate('/admin/compose-paper', { state: { selectedQuestionIds: selectedQuestions, subjectId: selectedSubject } });
+    const handleCompose = async () => {
+        try {
+            const res = await api.post('/api/papers/draft', {
+                subjectId: selectedSubject,
+                title: "New Draft Exam",
+                initialQuestionIds: selectedQuestions
+            });
+            navigate('/admin/compose-paper', {
+                state: { paperId: res.data.id, subjectId: selectedSubject }
+            });
+        } catch(err) {
+            console.error(err);
+            setNotification({ open: true, message: 'Failed to generate draft. Ensure backend is running and migrated.', severity: 'error' });
+        }
     };
 
     // Helper to extract text from EditorJS blocks safely

@@ -153,8 +153,10 @@ class Paper(db.Model):
     id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
     subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=False)
     title = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="DRAFT")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    paper_questions = db.relationship('PaperQuestion', backref='paper', cascade='all, delete-orphan', order_by='PaperQuestion.order_index', lazy=True)
     usages = db.relationship('QuestionUsage', backref='paper', cascade='all, delete-orphan', lazy=True)
 
     def to_dict(self):
@@ -162,8 +164,24 @@ class Paper(db.Model):
             "id": str(self.id),
             "subjectId": str(self.subject_id),
             "title": self.title,
+            "status": self.status,
+            "questions": [pq.question.to_dict() for pq in self.paper_questions],
             "createdAt": self.created_at.isoformat()
         }
+
+class PaperQuestion(db.Model):
+    __tablename__ = 'paper_questions'
+
+    id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
+    paper_id = db.Column(db.Uuid, db.ForeignKey('papers.id'), nullable=False)
+    question_id = db.Column(db.Uuid, db.ForeignKey('questions.id'), nullable=False)
+    order_index = db.Column(db.Integer, nullable=False, default=0)
+
+    question = db.relationship('Question')
+
+    __table_args__ = (
+        db.UniqueConstraint('paper_id', 'question_id', name='unique_paper_question'),
+    )
 
 class QuestionUsage(db.Model):
     __tablename__ = 'question_usages'
