@@ -146,3 +146,34 @@ class Question(db.Model):
             "editorData": self.editor_data,
             "createdAt": self.created_at.isoformat()
         }
+
+class Paper(db.Model):
+    __tablename__ = 'papers'
+
+    id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
+    subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    usages = db.relationship('QuestionUsage', backref='paper', cascade='all, delete-orphan', lazy=True)
+
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "subjectId": str(self.subject_id),
+            "title": self.title,
+            "createdAt": self.created_at.isoformat()
+        }
+
+class QuestionUsage(db.Model):
+    __tablename__ = 'question_usages'
+
+    id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
+    question_id = db.Column(db.Uuid, db.ForeignKey('questions.id'), nullable=False, index=True)
+    paper_id = db.Column(db.Uuid, db.ForeignKey('papers.id'), nullable=False)
+    subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=False, index=True)
+    used_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('question_id', 'paper_id', name='unique_question_paper_usage'),
+    )

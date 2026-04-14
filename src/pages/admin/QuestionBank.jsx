@@ -5,7 +5,7 @@ import {
     Box, Typography, Card, CardContent, TextField, MenuItem,
     Table, TableBody, TableCell, TableHead, TableRow,
     IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-    Alert, Snackbar, Checkbox
+    Alert, Snackbar, Checkbox, FormControlLabel, Switch, Chip
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit'; // Placeholder for future use
@@ -20,6 +20,7 @@ export default function QuestionBank() {
 
     const [questions, setQuestions] = useState([]);
     const [selectedQuestions, setSelectedQuestions] = useState([]);
+    const [includeUsed, setIncludeUsed] = useState(false);
     const [filterDifficulty, setFilterDifficulty] = useState('');
     const [filterSource, setFilterSource] = useState('');
     const [filterCreator, setFilterCreator] = useState('');
@@ -43,7 +44,7 @@ export default function QuestionBank() {
         } else {
             setQuestions([]);
         }
-    }, [selectedSubject]);
+    }, [selectedSubject, includeUsed]);
 
     const fetchSubjects = async () => {
         try {
@@ -56,7 +57,7 @@ export default function QuestionBank() {
 
     const fetchQuestions = async (subId) => {
         try {
-            const res = await api.get(`/api/questions?subjectId=${subId}`);
+            const res = await api.get(`/api/questions?subjectId=${subId}&includeUsed=${includeUsed}`);
             setQuestions(res.data);
         } catch (err) {
             console.error(err);
@@ -123,6 +124,12 @@ export default function QuestionBank() {
                             </MenuItem>
                         ))}
                     </TextField>
+                    
+                    <FormControlLabel
+                        control={<Switch checked={includeUsed} onChange={(e) => setIncludeUsed(e.target.checked)} />}
+                        label="Include recently used questions"
+                    />
+
                     {/* Could add Semester/Year filter here to filter the subjects list above if needed */}
                     {selectedQuestions.length > 0 && (
                         <Button
@@ -206,6 +213,9 @@ export default function QuestionBank() {
                                 </TableCell>
                                 <TableCell>
                                     <div dangerouslySetInnerHTML={{ __html: getPreviewText(q.editorData) }} />
+                                    {q.isRecentlyUsed && (
+                                        <Chip label="Recently Used" size="small" color="error" sx={{ mt: 1, fontWeight: 'bold' }} />
+                                    )}
                                 </TableCell>
                                 <TableCell>
                                     {q.coCode ? q.coCode : "General"}

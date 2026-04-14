@@ -134,12 +134,36 @@ def create_bulk_questions():
 @bp.route('', methods=['GET'])
 @jwt_required()
 def get_questions():
+    from datetime import datetime, timedelta
+    from ..models import Paper, QuestionUsage, db
+
     # Allow filtering by subject_id
     subject_id = request.args.get('subjectId')
     difficulty = request.args.get('difficulty')
     source = request.args.get('source')
     creator_id = request.args.get('creatorId')
+    include_used = request.args.get('includeUsed', 'false').lower() == 'true'
     
+    recently_used_ids_str = set()
+    recently_used_ids_obj = set()
+
+    if subject_id:
+        last_papers = Paper.query.filter_by(subject_id=subject_id).order_by(Paper.created_at.desc()).limit(3).all()
+        paper_ids = [p.id for p in last_papers]
+        
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        
+        usages_query = QuestionUsage.query.filter(
+            QuestionUsage.subject_id == subject_id,
+            db.or_(
+                QuestionUsage.paper_id.in_(paper_ids) if paper_ids else db.false(),
+                QuestionUsage.used_at >= thirty_days_ago
+            )
+        ).all()
+        
+        recently_used_ids_obj = {u.question_id for u in usages_query}
+        recently_used_ids_str = {str(u.question_id) for u in usages_query}
+
     query = Question.query
     if subject_id:
         query = query.filter_by(subject_id=subject_id)
@@ -150,9 +174,18 @@ def get_questions():
     if creator_id:
         query = query.filter_by(creator_id=creator_id)
         
-    questions = query.order_by(Question.created_at.desc()).all()
+    if not include_used and recently_used_ids_obj:
+        query = query.filter(Question.id.not_in(list(recently_used_ids_obj)))
         
-    return jsonify([q.to_dict() for q in questions]), 200
+    questions = query.order_by(Question.created_at.desc()).all()
+    
+    results = []
+    for q in questions:
+        q_dict = q.to_dict()
+        q_dict['isRecentlyUsed'] = str(q.id) in recently_used_ids_str
+        results.append(q_dict)
+        
+    return jsonify(results), 200
 
 @bp.route('/<question_id>', methods=['GET'])
 @jwt_required()

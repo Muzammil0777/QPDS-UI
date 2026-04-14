@@ -29,6 +29,7 @@ export default function ComposePaper() {
 
     const [questions, setQuestions] = useState([]); // Full question objects
     const [loading, setLoading] = useState(true);
+    const [finalizing, setFinalizing] = useState(false);
     const [paperTitle, setPaperTitle] = useState("Semester End Examination");
     const [subjectName, setSubjectName] = useState("");
     const [duration, setDuration] = useState("3 Hours");
@@ -102,6 +103,25 @@ export default function ComposePaper() {
         onAfterPrint: () => console.log("Print finished"),
     });
 
+    const handleFinalize = async () => {
+        if (!paperTitle || !subjectId) return alert('Subject and Title required');
+        
+        setFinalizing(true);
+        try {
+            await api.post('/api/papers/finalize', {
+                subjectId,
+                title: paperTitle,
+                questionIds: questions.map(q => q.id)
+            });
+            alert('Paper finalized successfully! Question usages have been logged.');
+        } catch (err) {
+            console.error(err);
+            alert('Failed to finalize paper.');
+        } finally {
+            setFinalizing(false);
+        }
+    };
+
     if (loading) return <Box p={4} display="flex" justifyContent="center"><CircularProgress /></Box>;
     if (questions.length === 0) return <Box p={4}><Alert severity="warning">No questions selected.</Alert><Button onClick={() => navigate(-1)}>Go Back</Button></Box>;
 
@@ -111,6 +131,9 @@ export default function ComposePaper() {
             {/* Controls - OUTSIDE the print ref */}
             <Box sx={{ mb: 4, display: 'flex', gap: 2, alignItems: 'center', width: '100%', maxWidth: '210mm' }}>
                 <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrint}>Print / Save PDF</Button>
+                <Button variant="contained" color="success" onClick={handleFinalize} disabled={finalizing}>
+                    {finalizing ? 'Finalizing...' : 'Finalize Paper'}
+                </Button>
                 <Button onClick={() => navigate(-1)}>Back to Bank</Button>
             </Box>
 
