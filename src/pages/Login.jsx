@@ -42,9 +42,9 @@ export default function Login() {
             const decoded = jwtDecode(token);
 
             if (decoded.role === 'ADMIN') {
-                navigate('/admin');
+                navigate('/admin', { replace: true });
             } else if (decoded.role === 'FACULTY') {
-                navigate('/faculty');
+                navigate('/faculty', { replace: true });
             } else {
                 setError('Unknown role');
             }

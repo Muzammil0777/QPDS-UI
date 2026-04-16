@@ -1,19 +1,13 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
+import { useAuth } from '../hooks/useAuth';
 
 const AdminRoute = ({ children }) => {
-    const token = localStorage.getItem('token');
-    if (!token) return <Navigate to="/login" replace />;
+    const { validateToken } = useAuth();
+    const decoded = validateToken();
 
-    try {
-        const decoded = jwtDecode(token);
-        if (decoded.role !== 'ADMIN') { // Adjust role string based on backend
-            return <Navigate to="/" replace />;
-        }
-    } catch (e) {
-        return <Navigate to="/login" replace />;
-    }
+    if (!decoded) return <Navigate to="/login" replace />;
+    if (decoded.role !== 'ADMIN') return <Navigate to="/" replace />;
 
     return children;
 };

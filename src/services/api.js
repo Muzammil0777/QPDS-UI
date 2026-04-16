@@ -25,10 +25,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response && error.response.status === 401) {
-            // Auto logout on 401?
-            // localStorage.removeItem('token');
-            // window.location.href = '/login';
+        if (!error.response) {
+            alert("Server is unavailable. Please try again later.");
+        } else if (error.response.status === 401 || error.response.status === 403) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
         }
         return Promise.reject(error);
     }
