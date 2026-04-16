@@ -211,3 +211,89 @@ def check_duplicate():
     except Exception as e:
         print(f"Duplicate Check Error: {e}")
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/ai/generate-question', methods=['POST'])
+@jwt_required()
+def generate_single_question():
+    try:
+        user_id = get_jwt_identity()
+        from ..models import User, AILog
+        user = User.query.get(user_id)
+        
+        # 1. Protect & Restrict Endpoint
+        if not user or user.role != 'ADMIN':
+            return jsonify({'error': 'Unauthorized access. Only Admin can generate AI questions.'}), 403
+
+        data = request.get_json()
+        subject_id = data.get('subjectId')
+        topic = data.get('topic')
+        difficulty = data.get('difficulty', 'MEDIUM').upper()
+        marks = data.get('marks', 5)
+
+        # 2. Validation
+        if difficulty not in ['EASY', 'MEDIUM', 'HARD']:
+            return jsonify({'error': 'Invalid difficulty level. Must be EASY, MEDIUM, or HARD.'}), 400
+
+        if not subject_id or not topic:
+            return jsonify({'error': 'Missing subjectId or topic field.'}), 400
+
+        subject = Subject.query.get(subject_id)
+        if not subject:
+            return jsonify({'error': 'Subject not found'}), 404
+
+        model_id = os.getenv('HF_MODEL_QP', 'Qwen/Qwen2.5-7B-Instruct')
+        client = get_hf_client(model_id)
+
+        system_prompt = "You are an expert academic question setter. Return strictly VALID JSON. No extra text or markdown wrappers."
+        user_prompt = f"Create ONE generic examination question for the subject '{subject.name}'.\nTopic: {topic}\nDifficulty: {difficulty}\nMarks: {marks}\nReturn exactly this JSON format: {{ \"text\": \"Question text here\" }}"
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+
+        # Call AI
+        output = client.chat_completion(messages=messages, max_tokens=800, temperature=0.7)
+        generated_text = output.choices[0].message.content.strip()
+        
+        # Safely parse text
+        clean_text = generated_text
+        if '```json' in clean_text:
+            clean_text = clean_text.split('```json')[1].split('```')[0]
+        elif '```' in clean_text:
+            clean_text = clean_text.split('```')[1].split('```')[0]
+            
+        try:
+            json_data = json.loads(clean_text)
+            q_text = json_data.get('text', clean_text)
+        except json.JSONDecodeError:
+            q_text = clean_text
+
+        # 3. Prevent Spoofing - Strict assignments
+        new_q = Question(
+            subject_id=subject.id,
+            editor_data={"time": int(time.time()), "blocks": [{"type": "paragraph", "data": {"text": q_text}}], "marks": marks},
+            creator_id=user.id,
+            source="AI",
+            difficulty=difficulty,
+            is_active=True
+        )
+        db.session.add(new_q)
+        db.session.flush()
+
+        # 4. Enforce Event Tracking
+        log_entry = AILog(
+            admin_user_id=user.id,
+            question_id=new_q.id,
+            input_prompt=user_prompt,
+            generated_text=generated_text
+        )
+        db.session.add(log_entry)
+        
+        db.session.commit()
+        return jsonify({"message": "Successfully generated and logged AI Question", "question": new_q.to_dict()}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Generate AI Question Error: {e}")
+        return jsonify({'error': str(e)}), 500

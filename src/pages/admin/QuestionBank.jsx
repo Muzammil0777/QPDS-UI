@@ -24,6 +24,13 @@ export default function QuestionBank() {
     const [filterDifficulty, setFilterDifficulty] = useState('');
     const [filterSource, setFilterSource] = useState('');
     const [filterCreator, setFilterCreator] = useState('');
+
+    const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+    const [aiTopic, setAiTopic] = useState("");
+    const [aiDifficulty, setAiDifficulty] = useState("MEDIUM");
+    const [aiMarks, setAiMarks] = useState(5);
+    const [aiLoading, setAiLoading] = useState(false);
+
     const [confirmDelete, setConfirmDelete] = useState(null);
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
@@ -103,6 +110,27 @@ export default function QuestionBank() {
         }
     };
 
+    const handleAIGenerate = async () => {
+        if (!aiTopic.trim()) return;
+        setAiLoading(true);
+        try {
+            await api.post('/api/ai/generate-question', {
+                subjectId: selectedSubject,
+                topic: aiTopic,
+                difficulty: aiDifficulty,
+                marks: aiMarks
+            });
+            setNotification({ open: true, message: 'AI Question generated successfully!', severity: 'success' });
+            setGenerateDialogOpen(false);
+            setAiTopic("");
+            fetchQuestions(selectedSubject);
+        } catch(err) {
+            setNotification({ open: true, message: 'Failed to generate AI question: ' + (err.response?.data?.error || err.message), severity: 'error' });
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
     // Helper to extract text from EditorJS blocks safely
     const getPreviewText = (editorData) => {
         if (!editorData?.blocks) return "No content";
@@ -141,15 +169,25 @@ export default function QuestionBank() {
                     />
 
                     {/* Could add Semester/Year filter here to filter the subjects list above if needed */}
-                    {selectedQuestions.length > 0 && (
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            onClick={handleCompose}
-                            sx={{ ml: 'auto' }}
-                        >
-                            Compose Paper ({selectedQuestions.length})
-                        </Button>
+                    {selectedSubject && (
+                        <Box sx={{ ml: 'auto', display: 'flex', gap: 2 }}>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={() => setGenerateDialogOpen(true)}
+                            >
+                                Generate AI Question
+                            </Button>
+                            {selectedQuestions.length > 0 && (
+                                <Button
+                                    variant="contained"
+                                    color="secondary"
+                                    onClick={handleCompose}
+                                >
+                                    Compose Paper ({selectedQuestions.length})
+                                </Button>
+                            )}
+                        </Box>
                     )}
                 </CardContent>
                 {selectedSubject && (
@@ -272,14 +310,51 @@ export default function QuestionBank() {
             </Card>
 
             {/* Delete Confirmation Dialog */}
-            <Dialog open={!!confirmDelete} onClose={() => setConfirmDelete(null)}>
+            <Dialog open={Boolean(confirmDelete)} onClose={() => setConfirmDelete(null)}>
                 <DialogTitle>Confirm Delete</DialogTitle>
                 <DialogContent>
-                    Are you sure you want to delete this question? This action cannot be undone.
+                    <Typography>Are you sure you want to delete this question? This cannot be undone.</Typography>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setConfirmDelete(null)}>Cancel</Button>
                     <Button onClick={handleDelete} color="error" variant="contained">Delete</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={generateDialogOpen} onClose={() => setGenerateDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Generate AI Question</DialogTitle>
+                <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                    <TextField 
+                        label="Topic or Keywords" 
+                        fullWidth 
+                        value={aiTopic} 
+                        onChange={(e) => setAiTopic(e.target.value)}
+                        placeholder="e.g. Laws of Thermodynamics"
+                    />
+                    <TextField 
+                        select 
+                        label="Difficulty" 
+                        fullWidth 
+                        value={aiDifficulty} 
+                        onChange={(e) => setAiDifficulty(e.target.value)}
+                    >
+                        <MenuItem value="EASY">EASY</MenuItem>
+                        <MenuItem value="MEDIUM">MEDIUM</MenuItem>
+                        <MenuItem value="HARD">HARD</MenuItem>
+                    </TextField>
+                    <TextField 
+                        label="Marks" 
+                        type="number" 
+                        fullWidth 
+                        value={aiMarks} 
+                        onChange={(e) => setAiMarks(Number(e.target.value))}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setGenerateDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleAIGenerate} variant="contained" color="primary" disabled={aiLoading || !aiTopic.trim()}>
+                        {aiLoading ? <CircularProgress size={24} /> : "Generate"}
+                    </Button>
                 </DialogActions>
             </Dialog>
 

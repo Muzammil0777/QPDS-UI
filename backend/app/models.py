@@ -225,3 +225,16 @@ class QuestionUsage(db.Model):
     __table_args__ = (
         db.UniqueConstraint('question_id', 'paper_id', name='unique_question_paper_usage'),
     )
+
+class AILog(db.Model):
+    __tablename__ = 'ai_logs'
+
+    id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
+    admin_user_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=False, index=True)
+    question_id = db.Column(db.Uuid, db.ForeignKey('questions.id'), nullable=True, index=True)
+    input_prompt = db.Column(db.Text, nullable=False)
+    generated_text = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    admin = db.relationship('User', foreign_keys=[admin_user_id])
+    question = db.relationship('Question', foreign_keys=[question_id])
