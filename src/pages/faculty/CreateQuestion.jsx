@@ -301,10 +301,9 @@ export default function CreateQuestion() {
     });
 
     return () => {
-      // Cleanup function
-      if (editorInstanceRef.current && typeof editorInstanceRef.current.destroy === 'function') {
-        // We can't await in cleanup, but we can fire and forget, catching errors
-        editorInstanceRef.current.destroy().catch(e => console.warn("Destroy error", e));
+      // Cleanup function safely destroying synchronously catching React suspense crashes
+      if (editorInstanceRef.current) {
+        safeDestroyEditorInstance(editorInstanceRef.current);
         editorInstanceRef.current = null;
       }
     };
