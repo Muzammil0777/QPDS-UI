@@ -29,6 +29,9 @@ def create_app(config_class=Config):
     from .routes import papers
     app.register_blueprint(papers.bp)
 
+    from .routes import sections
+    app.register_blueprint(sections.bp)
+
     @app.route('/api/health')
     def health():
         return {'status': 'ok'}

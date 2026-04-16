@@ -28,7 +28,7 @@ export default function ComposePaper() {
     const componentRef = useRef();
 
     const [paperData, setPaperData] = useState(null);
-    const [questions, setQuestions] = useState([]);
+    const [sections, setSections] = useState([]);
     const [loading, setLoading] = useState(true);
     const [finalizing, setFinalizing] = useState(false);
     
@@ -37,8 +37,9 @@ export default function ComposePaper() {
     const [duration, setDuration] = useState("3 Hours");
     const [maxMarks, setMaxMarks] = useState("100");
     
-    const [openAddModal, setOpenAddModal] = useState(false);
-    const [openReplaceModal, setOpenReplaceModal] = useState({ open: false, oldQuestionId: null });
+    // Modal states
+    const [openAddModal, setOpenAddModal] = useState({ open: false, targetSectionId: null });
+    const [openReplaceModal, setOpenReplaceModal] = useState({ open: false, targetSectionId: null, oldQuestionId: null });
     const [bankQuestions, setBankQuestions] = useState([]);
     
     useEffect(() => {
@@ -54,7 +55,7 @@ export default function ComposePaper() {
         try {
             const res = await api.get(`/api/papers/${paperId}`);
             setPaperData(res.data);
-            setQuestions(res.data.questions || []);
+            setSections(res.data.sections || []);
             setPaperTitle(res.data.title || "Draft Paper");
         } catch (err) {
             console.error("Error fetching paper details:", err);
@@ -77,53 +78,6 @@ export default function ComposePaper() {
 
     const isFinalized = paperData?.status === "FINALIZED";
 
-    const handleDragEnd = async (result) => {
-        if (!result.destination || isFinalized) return;
-        if (result.destination.index === result.source.index) return;
-
-        const items = Array.from(questions);
-        const [reorderedItem] = items.splice(result.source.index, 1);
-        items.splice(result.destination.index, 0, reorderedItem);
-
-        // Optimistic update
-        setQuestions(items);
-
-        try {
-            await api.put(`/api/papers/${paperId}/reorder`, {
-                orderedQuestionIds: items.map(q => q.id)
-            });
-        } catch (err) {
-            console.error("Reorder failed", err);
-            fetchPaperDetails(); // Revert
-        }
-    };
-
-    const handleRemove = async (questionId) => {
-        if (isFinalized) return;
-        try {
-            await api.delete(`/api/papers/${paperId}/remove-question/${questionId}`);
-            setQuestions(questions.filter(q => q.id !== questionId));
-        } catch (err) {
-            console.error("Failed to remove question", err);
-            alert("Failed to remove question: " + err.response?.data?.error);
-        }
-    };
-
-    const handleFinalize = async () => {
-        if (!window.confirm("Are you sure? Once finalized, the paper cannot be edited.")) return;
-        setFinalizing(true);
-        try {
-            await api.put(`/api/papers/${paperId}/finalize`);
-            alert('Paper finalized successfully! Usages logged permanently.');
-            fetchPaperDetails();
-        } catch (err) {
-            console.error('Finalize fail:', err);
-            alert('Failed to finalize paper.');
-        } finally {
-            setFinalizing(false);
-        }
-    };
-
     const fetchBankQuestions = async () => {
         try {
             const res = await api.get(`/api/questions?subjectId=${subjectId}&includeUsed=false`);
@@ -133,20 +87,150 @@ export default function ComposePaper() {
         }
     };
 
-    const handleOpenAddModal = () => {
-        fetchBankQuestions();
-        setOpenAddModal(true);
+    // --- Core Drag & Drop Mechanics ---
+    const handleDragEnd = async (result) => {
+        if (!result.destination || isFinalized) return;
+        const { source, destination, type, draggableId } = result;
+
+        if (source.droppableId === destination.droppableId && source.index === destination.index) {
+            return;
+        }
+
+        const newSections = Array.from(sections);
+
+        if (type === 'section') {
+            const [reorderedSection] = newSections.splice(source.index, 1);
+            newSections.splice(destination.index, 0, reorderedSection);
+            setSections(newSections);
+
+            try {
+                await api.put(`/api/papers/${paperId}/reorder-sections`, {
+                    orderedSectionIds: newSections.map(s => s.id)
+                });
+            } catch (err) {
+                console.error(err);
+                fetchPaperDetails();
+            }
+            return;
+        }
+
+        if (type === 'question') {
+            const sourceSecIndex = newSections.findIndex(s => s.id === source.droppableId);
+            const destSecIndex = newSections.findIndex(s => s.id === destination.droppableId);
+            
+            const sourceSection = newSections[sourceSecIndex];
+            const destSection = newSections[destSecIndex];
+
+            const [movedQuestion] = sourceSection.questions.splice(source.index, 1);
+
+            if (source.droppableId === destination.droppableId) {
+                // Moving inside same section
+                destSection.questions.splice(destination.index, 0, movedQuestion);
+                setSections(newSections);
+
+                try {
+                    await api.put(`/api/sections/${sourceSection.id}/reorder-questions`, {
+                        orderedQuestionIds: destSection.questions.map(q => q.id)
+                    });
+                } catch (err) {
+                    console.error(err);
+                    fetchPaperDetails();
+                }
+            } else {
+                // Moving across sections
+                destSection.questions.splice(destination.index, 0, movedQuestion);
+                setSections(newSections);
+
+                try {
+                    await api.put(`/api/papers/${paperId}/move-question`, {
+                        questionId: draggableId,
+                        fromSectionId: sourceSection.id,
+                        toSectionId: destSection.id,
+                        newIndex: destination.index
+                    });
+                } catch (err) {
+                    console.error(err);
+                    alert("Failed to move across section: " + (err.response?.data?.error || ""));
+                    fetchPaperDetails();
+                }
+            }
+        }
     };
 
-    const handleOpenReplaceModal = (oldQId) => {
-        fetchBankQuestions();
-        setOpenReplaceModal({ open: true, oldQuestionId: oldQId });
+    // --- Section & Question Controls ---
+    const handleAddSection = async () => {
+        if (isFinalized) return;
+        const title = prompt("Enter new section title:", `Section ${String.fromCharCode(65 + sections.length)}`);
+        if (!title) return;
+
+        try {
+            const res = await api.post(`/api/papers/${paperId}/sections`, { title });
+            setSections([...sections, res.data]);
+        } catch(err) {
+            alert("Failed to add section");
+        }
+    };
+
+    const handleDeleteSection = async (sectionId) => {
+        if (isFinalized) return;
+        const sec = sections.find(s => s.id === sectionId);
+        if (sec?.questions?.length > 0) {
+            alert("Cannot delete a section that has questions in it. Remove questions first.");
+            return;
+        }
+        if (!window.confirm("Delete this empty section?")) return;
+
+        try {
+            await api.delete(`/api/sections/${sectionId}`);
+            setSections(sections.filter(s => s.id !== sectionId));
+        } catch(err) {
+            alert("Failed to delete section: " + (err.response?.data?.error || err.message));
+        }
+    };
+
+    const handleRemoveQuestion = async (sectionId, questionId) => {
+        if (isFinalized) return;
+        try {
+            await api.delete(`/api/sections/${sectionId}/remove-question/${questionId}`);
+            fetchPaperDetails();
+        } catch (err) {
+            console.error("Failed to remove question", err);
+            alert("Failed to remove question: " + err.response?.data?.error);
+        }
+    };
+
+    const handleFinalize = async () => {
+        const emptySec = sections.find(s => s.questions.length === 0);
+        if (emptySec) {
+            alert(`Cannot finalize paper. "${emptySec.title}" is completely empty!`);
+            return;
+        }
+
+        if (!window.confirm("Are you sure? Once finalized, the structured paper cannot be edited.")) return;
+        setFinalizing(true);
+        try {
+            await api.put(`/api/papers/${paperId}/finalize`);
+            alert('Paper finalized successfully!');
+            fetchPaperDetails();
+        } catch (err) {
+            console.error('Finalize fail:', err);
+            alert('Failed to finalize paper: ' + (err.response?.data?.error || err.message));
+        } finally {
+            setFinalizing(false);
+        }
+    };
+
+    // --- Modal Executes ---
+    const getUsedQuestionIds = () => {
+        const used = [];
+        sections.forEach(s => s.questions.forEach(q => used.push(q.id)));
+        return used;
     };
 
     const handleExecuteAdd = async (newQuestionId) => {
         try {
-            await api.post(`/api/papers/${paperId}/add-question`, { questionId: newQuestionId });
-            setOpenAddModal(false);
+            await api.post(`/api/sections/${openAddModal.targetSectionId}/add-question`, { questionId: newQuestionId });
+            setOpenAddModal({ open: false, targetSectionId: null });
             fetchPaperDetails();
         } catch (err) {
             alert("Failed to add question: " + (err.response?.data?.error || err.message));
@@ -155,17 +239,18 @@ export default function ComposePaper() {
 
     const handleExecuteReplace = async (newQuestionId) => {
         try {
-            await api.put(`/api/papers/${paperId}/replace-question`, {
+            await api.put(`/api/sections/${openReplaceModal.targetSectionId}/replace-question`, {
                 oldQuestionId: openReplaceModal.oldQuestionId,
                 newQuestionId: newQuestionId
             });
-            setOpenReplaceModal({ open: false, oldQuestionId: null });
+            setOpenReplaceModal({ open: false, targetSectionId: null, oldQuestionId: null });
             fetchPaperDetails();
         } catch (err) {
             alert("Failed to replace question: " + (err.response?.data?.error || err.message));
         }
     };
 
+    // --- Helpers ---
     const getQuestionText = (editorData) => {
         if (!editorData?.blocks) return "No content";
         return editorData.blocks.map(b => {
@@ -184,7 +269,9 @@ export default function ComposePaper() {
     });
 
     if (loading) return <Box p={4} display="flex" justifyContent="center"><CircularProgress /></Box>;
-    if (!paperData) return <Box p={4}><Alert severity="error">Failed to load local Paper Draft context.</Alert><Button onClick={() => navigate(-1)}>Go Back</Button></Box>;
+    if (!paperData) return <Box p={4}><Alert severity="error">Failed to load Paper structure.</Alert><Button onClick={() => navigate(-1)}>Go Back</Button></Box>;
+
+    const usedIds = getUsedQuestionIds();
 
     return (
         <Box sx={{ p: 4, bgcolor: '#f5f5f5', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -216,6 +303,7 @@ export default function ComposePaper() {
                     '@media print': { boxShadow: 'none', margin: 0, p: 0 }
                 }}
             >
+                {/* Header Inputs */}
                 <Box sx={{ textAlign: 'center', mb: 4 }}>
                     <TextField
                         variant="standard" fullWidth
@@ -241,59 +329,107 @@ export default function ComposePaper() {
 
                 <MathJaxContext config={mathJaxConfig}>
                     <DragDropContext onDragEnd={handleDragEnd}>
-                        <Droppable droppableId="questionsDropdown">
-                            {(provided) => (
-                                <List {...provided.droppableProps} ref={provided.innerRef}>
-                                    {questions.map((q, index) => (
-                                        <Draggable key={q.id} draggableId={q.id} index={index} isDragDisabled={isFinalized}>
-                                            {(provided2) => (
-                                                <ListItem
-                                                    ref={provided2.innerRef}
-                                                    {...provided2.draggableProps}
-                                                    alignItems="flex-start"
-                                                    sx={{
-                                                        '&:hover .question-actions': { opacity: 1 },
-                                                        position: 'relative', pr: 2, breakInside: 'avoid',
-                                                        bgcolor: 'white', mb: 1
-                                                    }}
+                        
+                        {/* Outer Droppable for SECTIONS */}
+                        <Droppable droppableId="board" type="section">
+                            {(providedBoard) => (
+                                <Box ref={providedBoard.innerRef} {...providedBoard.droppableProps}>
+                                    
+                                    {sections.map((section, sIndex) => (
+                                        <Draggable key={section.id} draggableId={section.id} index={sIndex} isDragDisabled={isFinalized}>
+                                            {(providedSection) => (
+                                                <Box
+                                                    ref={providedSection.innerRef}
+                                                    {...providedSection.draggableProps}
+                                                    sx={{ mb: 4, p: 2, border: '1px dashed transparent', '&:hover': { borderColor: isFinalized ? 'transparent' : '#ccc' } }}
                                                 >
-                                                    {!isFinalized && (
-                                                        <Box {...provided2.dragHandleProps} sx={{ display: 'flex', alignItems: 'center', mr: 2, color: 'text.secondary' }}>
-                                                            <DragIndicatorIcon />
-                                                        </Box>
-                                                    )}
-                                                    
-                                                    <Typography variant="body1" sx={{ mr: 1, fontWeight: 'bold' }}>{index + 1}.</Typography>
-
-                                                    <ListItemText
-                                                        primary={
-                                                            <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                                                                <div dangerouslySetInnerHTML={{ __html: getQuestionText(q.editorData) }} style={{ flex: 1 }} />
-                                                                {getMarks(q) && (
-                                                                    <Typography variant="body2" sx={{ fontWeight: 'bold', ml: 2, whiteSpace: 'nowrap' }}>
-                                                                        [{getMarks(q)} Marks]
-                                                                    </Typography>
-                                                                )}
+                                                    {/* Section Header */}
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                                        {!isFinalized && (
+                                                            <Box {...providedSection.dragHandleProps} sx={{ mr: 1, color: 'text.secondary', display: 'flex', alignItems: 'center', '@media print': { display: 'none' }}}>
+                                                                <DragIndicatorIcon />
                                                             </Box>
-                                                        }
-                                                    />
+                                                        )}
+                                                        <Typography variant="h6" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'center' }}>
+                                                            {section.title}
+                                                        </Typography>
+                                                        {!isFinalized && (
+                                                            <Box sx={{ '@media print': { display: 'none' }}}>
+                                                                <IconButton size="small" color="error" disabled={section.questions.length > 0} onClick={() => handleDeleteSection(section.id)}>
+                                                                    <DeleteIcon />
+                                                                </IconButton>
+                                                            </Box>
+                                                        )}
+                                                    </Box>
 
+                                                    {/* Inner Droppable for QUESTIONS */}
+                                                    <Droppable droppableId={section.id} type="question">
+                                                        {(providedSecList) => (
+                                                            <List ref={providedSecList.innerRef} {...providedSecList.droppableProps} sx={{ minHeight: '50px' }}>
+                                                                {section.questions.map((q, qIndex) => (
+                                                                    <Draggable key={q.id} draggableId={q.id} index={qIndex} isDragDisabled={isFinalized}>
+                                                                        {(providedQuestion) => (
+                                                                            <ListItem
+                                                                                ref={providedQuestion.innerRef}
+                                                                                {...providedQuestion.draggableProps}
+                                                                                alignItems="flex-start"
+                                                                                sx={{ '&:hover .question-actions': { opacity: 1 }, position: 'relative', pr: 2, breakInside: 'avoid', bgcolor: 'white', mb: 1 }}
+                                                                            >
+                                                                                {!isFinalized && (
+                                                                                    <Box {...providedQuestion.dragHandleProps} sx={{ display: 'flex', alignItems: 'center', mr: 2, color: 'text.secondary', '@media print': { display: 'none' }}}>
+                                                                                        <DragIndicatorIcon fontSize="small" />
+                                                                                    </Box>
+                                                                                )}
+                                                                                
+                                                                                <Typography variant="body1" sx={{ mr: 1, fontWeight: 'bold' }}>{qIndex + 1}.</Typography>
+
+                                                                                <ListItemText
+                                                                                    primary={
+                                                                                        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                                                                                            <div dangerouslySetInnerHTML={{ __html: getQuestionText(q.editorData) }} style={{ flex: 1 }} />
+                                                                                            {getMarks(q) && (
+                                                                                                <Typography variant="body2" sx={{ fontWeight: 'bold', ml: 2, whiteSpace: 'nowrap' }}>
+                                                                                                    [{getMarks(q)} Marks]
+                                                                                                </Typography>
+                                                                                            )}
+                                                                                        </Box>
+                                                                                    }
+                                                                                />
+
+                                                                                {!isFinalized && (
+                                                                                    <Box className="question-actions" sx={{ position: 'absolute', right: 0, top: 0, opacity: 0, transition: '0.2s', bgcolor: '#f1f1f1', borderRadius: 1, display: 'flex', '@media print': { display: 'none' }}}>
+                                                                                        <IconButton size="small" color="primary" onClick={() => { fetchBankQuestions(); setOpenReplaceModal({ open: true, targetSectionId: section.id, oldQuestionId: q.id }); }}>
+                                                                                            <SwapHorizIcon />
+                                                                                        </IconButton>
+                                                                                        <IconButton size="small" color="error" onClick={() => handleRemoveQuestion(section.id, q.id)}>
+                                                                                            <DeleteIcon />
+                                                                                        </IconButton>
+                                                                                    </Box>
+                                                                                )}
+                                                                            </ListItem>
+                                                                        )}
+                                                                    </Draggable>
+                                                                ))}
+                                                                {providedSecList.placeholder}
+                                                            </List>
+                                                        )}
+                                                    </Droppable>
+
+                                                    {/* Add Question Button per section */}
                                                     {!isFinalized && (
-                                                        <Box className="question-actions" sx={{ position: 'absolute', right: 0, top: 0, opacity: 0, transition: '0.2s', bgcolor: '#f1f1f1', borderRadius: 1, display: 'flex', '@media print': { display: 'none' }}}>
-                                                            <IconButton size="small" color="primary" onClick={() => handleOpenReplaceModal(q.id)}>
-                                                                <SwapHorizIcon />
-                                                            </IconButton>
-                                                            <IconButton size="small" color="error" onClick={() => handleRemove(q.id)}>
-                                                                <DeleteIcon />
-                                                            </IconButton>
+                                                        <Box sx={{ mt: 1, textAlign: 'center', '@media print': { display: 'none' } }}>
+                                                            <Button size="small" variant="text" startIcon={<AddIcon />} onClick={() => { fetchBankQuestions(); setOpenAddModal({ open: true, targetSectionId: section.id }); }}>
+                                                                Add Question
+                                                            </Button>
                                                         </Box>
                                                     )}
-                                                </ListItem>
+                                                </Box>
                                             )}
                                         </Draggable>
                                     ))}
-                                    {provided.placeholder}
-                                </List>
+                                    {providedBoard.placeholder}
+                                    
+                                </Box>
                             )}
                         </Droppable>
                     </DragDropContext>
@@ -301,37 +437,38 @@ export default function ComposePaper() {
 
                 {!isFinalized && (
                     <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', '@media print': { display: 'none' } }}>
-                        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleOpenAddModal}>
-                            Add Question from Bank
+                        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddSection}>
+                            Add New Section
                         </Button>
                     </Box>
                 )}
             </Box>
 
-            <Dialog open={openAddModal || openReplaceModal.open} onClose={() => { setOpenAddModal(false); setOpenReplaceModal({open: false, oldQuestionId: null}); }} maxWidth="md" fullWidth>
-                <DialogTitle>{openAddModal ? "Add New Question" : "Replace Question"}</DialogTitle>
+            {/* Repurposed Modal for Add / Replace with unified state rendering */}
+            <Dialog open={openAddModal.open || openReplaceModal.open} onClose={() => { setOpenAddModal({open: false}); setOpenReplaceModal({open: false}); }} maxWidth="md" fullWidth>
+                <DialogTitle>{openAddModal.open ? "Add Question" : "Replace Question"}</DialogTitle>
                 <DialogContent dividers>
                     <List>
-                        {bankQuestions.filter(bq => !questions.some(q => q.id === bq.id)).length > 0 ? (
-                            bankQuestions.filter(bq => !questions.some(q => q.id === bq.id)).map(bq => (
+                        {bankQuestions.filter(bq => !usedIds.includes(bq.id)).length > 0 ? (
+                            bankQuestions.filter(bq => !usedIds.includes(bq.id)).map(bq => (
                                 <ListItem key={bq.id} disablePadding sx={{ borderBottom: '1px solid #ddd' }}>
                                     <Box sx={{ py: 1, px: 2, width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <Box sx={{ flex: 1, mr: 2, maxHeight: '60px', overflow: 'hidden' }}>
                                             <div dangerouslySetInnerHTML={{ __html: getQuestionText(bq.editorData) }} />
                                         </Box>
-                                        <Button variant="contained" size="small" onClick={() => openAddModal ? handleExecuteAdd(bq.id) : handleExecuteReplace(bq.id)}>
+                                        <Button variant="contained" size="small" onClick={() => openAddModal.open ? handleExecuteAdd(bq.id) : handleExecuteReplace(bq.id)}>
                                             Select
                                         </Button>
                                     </Box>
                                 </ListItem>
                             ))
                         ) : (
-                            <Typography sx={{ p: 2, textAlign: 'center' }}>No unused questions available in bank for this subject.</Typography>
+                            <Typography sx={{ p: 2, textAlign: 'center' }}>No unused questions available.</Typography>
                         )}
                     </List>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => { setOpenAddModal(false); setOpenReplaceModal({open: false, oldQuestionId: null}); }}>Close</Button>
+                    <Button onClick={() => { setOpenAddModal({open: false}); setOpenReplaceModal({open: false}); }}>Close</Button>
                 </DialogActions>
             </Dialog>
         </Box>

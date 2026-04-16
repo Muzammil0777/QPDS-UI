@@ -156,7 +156,7 @@ class Paper(db.Model):
     status = db.Column(db.String(20), nullable=False, default="DRAFT")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    paper_questions = db.relationship('PaperQuestion', backref='paper', cascade='all, delete-orphan', order_by='PaperQuestion.order_index', lazy=True)
+    sections = db.relationship('Section', backref='paper', cascade='all, delete-orphan', order_by='Section.order_index', lazy=True)
     usages = db.relationship('QuestionUsage', backref='paper', cascade='all, delete-orphan', lazy=True)
 
     def to_dict(self):
@@ -165,8 +165,37 @@ class Paper(db.Model):
             "subjectId": str(self.subject_id),
             "title": self.title,
             "status": self.status,
-            "questions": [pq.question.to_dict() for pq in self.paper_questions],
+            "sections": [s.to_dict() for s in self.sections],
             "createdAt": self.created_at.isoformat()
+        }
+
+class Section(db.Model):
+    __tablename__ = 'sections'
+
+    id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
+    paper_id = db.Column(db.Uuid, db.ForeignKey('papers.id'), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    total_marks = db.Column(db.Integer, nullable=True)
+    order_index = db.Column(db.Integer, nullable=False, default=0)
+
+    paper_questions = db.relationship('PaperQuestion', backref='section', cascade='all, delete-orphan', order_by='PaperQuestion.order_index', lazy=True)
+
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "paperId": str(self.paper_id),
+            "title": self.title,
+            "totalMarks": self.total_marks,
+            "orderIndex": self.order_index,
+            # Attach question properties alongside mapping properties if needed,
+            # but usually directly dumping the question works
+            "questions": [
+                {
+                    **pq.question.to_dict(),
+                    "paperQuestionId": str(pq.id),
+                    "orderIndex": pq.order_index
+                } for pq in self.paper_questions
+            ]
         }
 
 class PaperQuestion(db.Model):
@@ -174,6 +203,7 @@ class PaperQuestion(db.Model):
 
     id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
     paper_id = db.Column(db.Uuid, db.ForeignKey('papers.id'), nullable=False)
+    section_id = db.Column(db.Uuid, db.ForeignKey('sections.id'), nullable=False)
     question_id = db.Column(db.Uuid, db.ForeignKey('questions.id'), nullable=False)
     order_index = db.Column(db.Integer, nullable=False, default=0)
 
