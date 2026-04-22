@@ -91,12 +91,17 @@ def create_bulk_questions():
         from datetime import datetime
         import time
 
+        from ..services.bloom_service import classify_bloom_level, map_to_difficulty
+
         for q_item in questions:
             q_text = q_item.get('text')
             if not q_text: 
                 continue
                 
             q_marks = q_item.get('marks')
+            
+            computed_bloom_level = classify_bloom_level(q_text)
+            computed_difficulty = map_to_difficulty(computed_bloom_level)
 
             # Construct minimal EditorJS block
             editor_data = {
@@ -109,7 +114,11 @@ def create_bulk_questions():
                     }
                 ],
                 "version": "2.28.0",
-                "marks": q_marks # Store marks in metadata
+                "meta": {
+                    "marks": q_marks,
+                    "difficulty": computed_difficulty,
+                    "bloomLevel": computed_bloom_level
+                }
             }
             
             new_q = Question(
@@ -117,7 +126,8 @@ def create_bulk_questions():
                 course_outcome_id=assigned_co_id, # Optional
                 creator_id=user_id,
                 source="AI",
-                difficulty=difficulty,
+                difficulty=computed_difficulty,
+                bloom_level=computed_bloom_level,
                 editor_data=editor_data,
                 created_at=datetime.utcnow()
             )
@@ -227,9 +237,28 @@ def update_question(question_id):
         if not question:
             return jsonify({'error': 'Question not found'}), 404
             
+        from ..services.bloom_service import extract_text_from_editor_data, classify_bloom_level, map_to_difficulty
+
         # Update fields if provided
         if 'editorData' in data:
-            question.editor_data = data['editorData']
+            editor_data = data['editorData']
+            q_text = extract_text_from_editor_data(editor_data)
+            
+            computed_bloom_level = classify_bloom_level(q_text)
+            computed_difficulty = map_to_difficulty(computed_bloom_level)
+            
+            question.bloom_level = computed_bloom_level
+            question.difficulty = computed_difficulty
+            
+            # Ensure meta exists
+            if 'meta' not in editor_data:
+                editor_data['meta'] = {}
+            
+            editor_data['meta']['bloomLevel'] = computed_bloom_level
+            editor_data['meta']['difficulty'] = computed_difficulty
+            
+            # Re-assign to trigger SQLAlchemy JSON update
+            question.editor_data = editor_data
             
         # Optional: Update Subject/CO if needed, though usually fixed. 
         # But admin might want to re-map.

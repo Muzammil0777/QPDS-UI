@@ -124,6 +124,7 @@ class Question(db.Model):
     creator_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=False)
     source = db.Column(db.String(10), nullable=False, default="MANUAL")
     difficulty = db.Column(db.String(10), nullable=False, default="MEDIUM")
+    bloom_level = db.Column(db.String(20), nullable=False, default="understand")
     editor_data = db.Column(JSON().with_variant(JSONB, 'postgresql'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -143,6 +144,7 @@ class Question(db.Model):
             "creatorName": self.creator.name if self.creator else None,
             "source": self.source,
             "difficulty": self.difficulty,
+            "bloomLevel": self.bloom_level,
             "editorData": self.editor_data,
             "createdAt": self.created_at.isoformat()
         }

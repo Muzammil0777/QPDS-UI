@@ -119,7 +119,13 @@ def create_question(data, user_id):
         if c_outcome.subject_id != subject.id:
              raise ValueError("Course Outcome does not belong to this subject")
 
-    # 6. Create Question
+    # 6. Bloom's Taxonomy Classification
+    from .bloom_service import extract_text_from_editor_data, classify_bloom_level, map_to_difficulty
+    
+    question_text = extract_text_from_editor_data(editor_data)
+    computed_bloom_level = classify_bloom_level(question_text)
+    computed_difficulty = map_to_difficulty(computed_bloom_level)
+
     # Inject metadata into editor_data so it is stored in the JSON
     if editor_data:
         editor_data['meta'] = {
@@ -128,19 +134,18 @@ def create_question(data, user_id):
             'subcode': sub_code,
             'courseOutcomeId': co_id,
             'marks': marks,
-            'difficulty': difficulty,
+            'difficulty': computed_difficulty,
+            'bloomLevel': computed_bloom_level,
             'savedAt': datetime.utcnow().isoformat()
         }
-
-    # Extract clean difficulty to match ENUM
-    clean_difficulty = difficulty.upper() if difficulty and difficulty.upper() in ["EASY", "MEDIUM", "HARD"] else "MEDIUM"
 
     question = Question(
         subject_id=subject.id,
         course_outcome_id=co_uuid if co_id else None,
         creator_id=user.id,
         source="MANUAL",
-        difficulty=clean_difficulty,
+        difficulty=computed_difficulty,
+        bloom_level=computed_bloom_level,
         editor_data=editor_data
     )
     db.session.add(question)
