@@ -318,6 +318,31 @@ export default function CreateQuestion() {
 
     try {
       const content = await editorInstanceRef.current.save();
+      
+      // Validation: ensure question isn't empty or just default placeholders
+      let hasRealContent = false;
+      if (content.blocks && content.blocks.length > 0) {
+          for (let block of content.blocks) {
+              if (block.type === 'paragraph' && block.data?.text && block.data.text.trim() !== '' && block.data.text.replace(/&nbsp;/g, '').trim() !== 'Write the question stem...') {
+                  hasRealContent = true;
+                  break;
+              }
+              if (block.type === 'header' && block.data?.text && block.data.text.trim() !== '' && block.data.text.replace(/&nbsp;/g, '').trim() !== 'Question title') {
+                  hasRealContent = true;
+                  break;
+              }
+              if (block.type !== 'paragraph' && block.type !== 'header') {
+                  // Any image, list, math block counts as real content
+                  hasRealContent = true;
+                  break;
+              }
+          }
+      }
+      
+      if (!hasRealContent) {
+          return alert("Cannot save an empty question. Please write the actual question content.");
+      }
+
       const payload = {
         subjectId: selectedSubject,
         courseOutcomeId: selectedCO,
