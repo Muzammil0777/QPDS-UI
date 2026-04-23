@@ -41,6 +41,26 @@ export default function ComposePaper() {
     const [openAddModal, setOpenAddModal] = useState({ open: false, targetSectionId: null });
     const [openReplaceModal, setOpenReplaceModal] = useState({ open: false, targetSectionId: null, oldQuestionId: null });
     const [bankQuestions, setBankQuestions] = useState([]);
+    const [validationResult, setValidationResult] = useState(null);
+    
+    useEffect(() => {
+        if (!paperId || sections.length === 0) {
+            setValidationResult(null);
+            return;
+        }
+        const validatePaper = async () => {
+            try {
+                const res = await api.post(`/api/papers/${paperId}/validate`, { totalMarks: Number(maxMarks) || 0 });
+                setValidationResult(res.data);
+            } catch (err) {
+                console.error("Validation check failed", err);
+            }
+        };
+        
+        // Debounce to avoid spamming the backend while typing maxMarks
+        const timeoutId = setTimeout(() => validatePaper(), 500);
+        return () => clearTimeout(timeoutId);
+    }, [sections, maxMarks, paperId]);
     
     useEffect(() => {
         if (!paperId) {
@@ -209,7 +229,7 @@ export default function ComposePaper() {
         if (!window.confirm("Are you sure? Once finalized, the structured paper cannot be edited.")) return;
         setFinalizing(true);
         try {
-            await api.put(`/api/papers/${paperId}/finalize`);
+            await api.put(`/api/papers/${paperId}/finalize`, { totalMarks: Number(maxMarks) });
             alert('Paper finalized successfully!');
             fetchPaperDetails();
         } catch (err) {
@@ -287,13 +307,54 @@ export default function ComposePaper() {
                 <Box sx={{ display: 'flex', gap: 2 }}>
                     <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrint}>Print PDF</Button>
                     {!isFinalized && (
-                        <Button variant="contained" color="success" onClick={handleFinalize} disabled={finalizing}>
+                        <Button 
+                            variant="contained" 
+                            color="success" 
+                            onClick={handleFinalize} 
+                            disabled={finalizing || (validationResult && !validationResult.valid)}
+                        >
                             {finalizing ? 'Finalizing...' : 'Finalize Paper'}
                         </Button>
                     )}
                     <Button onClick={() => navigate(-1)}>Back</Button>
                 </Box>
             </Box>
+
+            {/* Validation Panel */}
+            {!isFinalized && validationResult && validationResult.details && (
+                <Paper sx={{ p: 2, mb: 3, width: '100%', maxWidth: '210mm', bgcolor: validationResult.valid ? '#e8f5e9' : '#ffebee' }}>
+                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>📊 Question Paper Status</Typography>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                            <Typography variant="body2">
+                                {validationResult.details.current_total_marks === validationResult.details.required_total_marks ? '✔' : '❌'} Total Marks: {validationResult.details.current_total_marks}/{validationResult.details.required_total_marks}
+                            </Typography>
+                            <Typography variant="body2">
+                                {validationResult.details.easy_count >= validationResult.details.min_easy ? '✔' : '❌'} Easy Questions: {validationResult.details.easy_count} (Need {validationResult.details.min_easy})
+                            </Typography>
+                            <Typography variant="body2">
+                                {validationResult.details.medium_count >= validationResult.details.min_medium ? '✔' : '❌'} Medium Questions: {validationResult.details.medium_count} (Need {validationResult.details.min_medium})
+                            </Typography>
+                            <Typography variant="body2">
+                                {validationResult.details.hard_count >= validationResult.details.min_hard ? '✔' : '❌'} Hard Questions: {validationResult.details.hard_count} (Need {validationResult.details.min_hard})
+                            </Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <Typography variant="body2">
+                                {validationResult.details.has_low_bloom && validationResult.details.has_medium_bloom && validationResult.details.has_high_bloom ? '✔' : '❌'} Bloom Coverage: 
+                                {validationResult.details.has_low_bloom && validationResult.details.has_medium_bloom && validationResult.details.has_high_bloom ? ' OK' : ' Missing Levels'}
+                            </Typography>
+                            {!validationResult.valid && validationResult.errors.length > 0 && (
+                                <Box sx={{ mt: 1 }}>
+                                    {validationResult.errors.map((e, i) => (
+                                        <Typography key={i} variant="caption" color="error" display="block">• {e}</Typography>
+                                    ))}
+                                </Box>
+                            )}
+                        </Grid>
+                    </Grid>
+                </Paper>
+            )}
 
             <Box
                 ref={componentRef}

@@ -170,6 +170,20 @@ def finalize_paper(paper_id):
             if count == 0:
                 return jsonify({'error': f'Section "{sec.title}" is empty. Cannot finalize paper.'}), 400
 
+        # Paper Validation Engine
+        data = request.get_json() or {}
+        total_marks = data.get('totalMarks')
+        if not total_marks:
+            return jsonify({'error': 'totalMarks is required to finalize paper.'}), 400
+            
+        pqs = PaperQuestion.query.filter_by(paper_id=paper_id).all()
+        questions = [pq.question for pq in pqs]
+        
+        from ..services.validation_service import validate_question_paper
+        validation = validate_question_paper(questions, total_marks)
+        if not validation['valid']:
+            return jsonify({'error': 'Paper validation failed', 'validationErrors': validation['errors']}), 400
+
         paper.status = 'FINALIZED'
         
         # Tracking usages natively
@@ -188,3 +202,20 @@ def finalize_paper(paper_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+# G. Validate Paper
+@bp.route('/<paper_id>/validate', methods=['POST'])
+@jwt_required()
+def validate_paper(paper_id):
+    paper = get_paper_or_404(paper_id)
+    if not paper: return jsonify({'error': 'Paper not found'}), 404
+    
+    data = request.get_json() or {}
+    total_marks = data.get('totalMarks', 100)
+    
+    pqs = PaperQuestion.query.filter_by(paper_id=paper_id).all()
+    questions = [pq.question for pq in pqs]
+    
+    from ..services.validation_service import validate_question_paper
+    result = validate_question_paper(questions, total_marks)
+    return jsonify(result), 200
