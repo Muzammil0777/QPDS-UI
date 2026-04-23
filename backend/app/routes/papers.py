@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
-from ..models import db, Paper, Section, PaperQuestion, QuestionUsage, Question
+from ..models import db, Paper, Section, PaperQuestion, QuestionUsage, Question, Subject
 
 bp = Blueprint('papers', __name__, url_prefix='/api/papers')
 
@@ -219,3 +219,108 @@ def validate_paper(paper_id):
     from ..services.validation_service import validate_question_paper
     result = validate_question_paper(questions, total_marks)
     return jsonify(result), 200
+
+# H. Validate Draft (Arbitrary Question IDs)
+@bp.route('/validate-draft', methods=['POST'])
+@jwt_required()
+def validate_draft():
+    data = request.get_json() or {}
+    question_ids = data.get('questionIds', [])
+    total_marks = data.get('totalMarks', 100)
+    
+    questions = Question.query.filter(Question.id.in_(question_ids)).all()
+    from ..services.validation_service import validate_question_paper
+    result = validate_question_paper(questions, total_marks)
+    return jsonify(result), 200
+
+# I. Auto Generate Question Paper
+@bp.route('/auto-generate', methods=['POST'])
+@jwt_required()
+def auto_generate_paper():
+    data = request.get_json() or {}
+    subject_id = data.get('subjectId')
+    total_marks = int(data.get('totalMarks', 100))
+    target_difficulty = data.get('difficulty', 'MEDIUM').upper()
+    
+    if not subject_id:
+        return jsonify({'error': 'Subject ID required'}), 400
+        
+    questions = Question.query.filter_by(subject_id=subject_id).all()
+    if not questions:
+        return jsonify({'error': 'No questions found for this subject'}), 400
+        
+    import random
+    from ..services.validation_service import validate_question_paper
+    
+    # Pre-calculate marks for efficiency
+    for q in questions:
+        ed = q.editor_data or {}
+        marks_str = ed.get('marks') or ed.get('meta', {}).get('marks')
+        try:
+            q._mark_val = float(marks_str) if marks_str else 0
+        except:
+            q._mark_val = 0
+
+    valid_subset = None
+    max_attempts = 2000
+    
+    for _ in range(max_attempts):
+        subset = []
+        current_marks = 0
+        
+        # Bias the shuffle slightly towards target_difficulty
+        if random.random() > 0.5:
+             questions.sort(key=lambda q: 0 if (q.difficulty or 'MEDIUM').upper() == target_difficulty else 1)
+        else:
+             random.shuffle(questions)
+             
+        for q in questions:
+            if current_marks + q._mark_val <= total_marks:
+                subset.append(q)
+                current_marks += q._mark_val
+                if current_marks == total_marks:
+                    break
+                    
+        if current_marks == total_marks:
+            val_res = validate_question_paper(subset, total_marks)
+            if val_res['valid']:
+                valid_subset = subset
+                break
+                
+    if not valid_subset:
+        return jsonify({'error': 'Could not find a combination of questions satisfying the 40/30/30 distribution and Bloom coverage rules. Add more varied questions to the bank.'}), 400
+        
+    try:
+        subject = Subject.query.get(subject_id)
+        paper = Paper(
+            subject_id=subject_id,
+            title=f"Auto-Generated Paper ({total_marks} Marks)",
+            status="DRAFT",
+            created_at=datetime.utcnow()
+        )
+        db.session.add(paper)
+        db.session.flush()
+
+        section = Section(
+            paper_id=paper.id,
+            title="Section A",
+            order_index=0
+        )
+        db.session.add(section)
+        db.session.flush()
+        
+        for idx, q in enumerate(valid_subset):
+            pq = PaperQuestion(
+                paper_id=paper.id,
+                section_id=section.id,
+                question_id=q.id,
+                order_index=idx
+            )
+            db.session.add(pq)
+            
+        db.session.commit()
+        return jsonify({'paperId': str(paper.id)}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+

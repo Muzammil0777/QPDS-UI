@@ -28,8 +28,11 @@ export default function QuestionBank() {
     const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
     const [aiTopic, setAiTopic] = useState("");
     const [aiDifficulty, setAiDifficulty] = useState("MEDIUM");
-    const [aiMarks, setAiMarks] = useState(5);
+    const [aiMarks, setAiMarks] = useState(100);
     const [aiLoading, setAiLoading] = useState(false);
+
+    const [targetMarks, setTargetMarks] = useState(100);
+    const [validationResult, setValidationResult] = useState(null);
 
     const [confirmDelete, setConfirmDelete] = useState(null);
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
@@ -52,6 +55,26 @@ export default function QuestionBank() {
             setQuestions([]);
         }
     }, [selectedSubject, includeUsed]);
+
+    useEffect(() => {
+        if (selectedQuestions.length === 0) {
+            setValidationResult(null);
+            return;
+        }
+        const validateDraft = async () => {
+            try {
+                const res = await api.post('/api/papers/validate-draft', {
+                    questionIds: selectedQuestions,
+                    totalMarks: Number(targetMarks) || 0
+                });
+                setValidationResult(res.data);
+            } catch (err) {
+                console.error("Validation check failed", err);
+            }
+        };
+        const timeoutId = setTimeout(() => validateDraft(), 500);
+        return () => clearTimeout(timeoutId);
+    }, [selectedQuestions, targetMarks]);
 
     const fetchSubjects = async () => {
         try {
@@ -111,21 +134,23 @@ export default function QuestionBank() {
     };
 
     const handleAIGenerate = async () => {
-        if (!aiTopic.trim()) return;
+        if (!aiMarks) return;
         setAiLoading(true);
         try {
-            await api.post('/api/ai/generate-question', {
+            const res = await api.post('/api/papers/auto-generate', {
                 subjectId: selectedSubject,
-                topic: aiTopic,
-                difficulty: aiDifficulty,
-                marks: aiMarks
+                totalMarks: Number(aiMarks),
+                difficulty: aiDifficulty
             });
-            setNotification({ open: true, message: 'AI Question generated successfully!', severity: 'success' });
+            setNotification({ open: true, message: 'AI Question Paper generated successfully!', severity: 'success' });
             setGenerateDialogOpen(false);
-            setAiTopic("");
-            fetchQuestions(selectedSubject);
+            
+            // Navigate directly to compose page with the new paper
+            navigate('/admin/compose-paper', {
+                state: { paperId: res.data.paperId, subjectId: selectedSubject }
+            });
         } catch(err) {
-            setNotification({ open: true, message: 'Failed to generate AI question: ' + (err.response?.data?.error || err.message), severity: 'error' });
+            setNotification({ open: true, message: 'Failed to generate AI question paper: ' + (err.response?.data?.error || err.message), severity: 'error' });
         } finally {
             setAiLoading(false);
         }
@@ -170,22 +195,32 @@ export default function QuestionBank() {
 
                     {/* Could add Semester/Year filter here to filter the subjects list above if needed */}
                     {selectedSubject && (
-                        <Box sx={{ ml: 'auto', display: 'flex', gap: 2 }}>
+                        <Box sx={{ ml: 'auto', display: 'flex', gap: 2, alignItems: 'center' }}>
                             <Button
                                 variant="contained"
                                 color="primary"
                                 onClick={() => setGenerateDialogOpen(true)}
                             >
-                                Generate AI Question
+                                Generate AI Question Paper
                             </Button>
                             {selectedQuestions.length > 0 && (
-                                <Button
-                                    variant="contained"
-                                    color="secondary"
-                                    onClick={handleCompose}
-                                >
-                                    Compose Paper ({selectedQuestions.length})
-                                </Button>
+                                <>
+                                    <TextField 
+                                        label="Target Marks" 
+                                        type="number" 
+                                        size="small" 
+                                        sx={{ width: 100 }}
+                                        value={targetMarks}
+                                        onChange={(e) => setTargetMarks(e.target.value)}
+                                    />
+                                    <Button
+                                        variant="contained"
+                                        color="secondary"
+                                        onClick={handleCompose}
+                                    >
+                                        Compose Paper ({selectedQuestions.length})
+                                    </Button>
+                                </>
                             )}
                         </Box>
                     )}
@@ -227,6 +262,42 @@ export default function QuestionBank() {
                     </CardContent>
                 )}
             </Card>
+
+            {/* Validation Panel */}
+            {selectedSubject && selectedQuestions.length > 0 && validationResult && validationResult.details && (
+                <Card sx={{ p: 2, mb: 3, width: '100%', bgcolor: validationResult.valid ? '#e8f5e9' : '#ffebee' }}>
+                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>📊 Live Question Paper Status</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                        <Box>
+                            <Typography variant="body2">
+                                {validationResult.details.current_total_marks === validationResult.details.required_total_marks ? '✔' : '❌'} Total Marks: {validationResult.details.current_total_marks}/{validationResult.details.required_total_marks}
+                            </Typography>
+                            <Typography variant="body2">
+                                {validationResult.details.easy_count >= validationResult.details.min_easy ? '✔' : '❌'} Easy Questions: {validationResult.details.easy_count} (Need {validationResult.details.min_easy})
+                            </Typography>
+                            <Typography variant="body2">
+                                {validationResult.details.medium_count >= validationResult.details.min_medium ? '✔' : '❌'} Medium Questions: {validationResult.details.medium_count} (Need {validationResult.details.min_medium})
+                            </Typography>
+                            <Typography variant="body2">
+                                {validationResult.details.hard_count >= validationResult.details.min_hard ? '✔' : '❌'} Hard Questions: {validationResult.details.hard_count} (Need {validationResult.details.min_hard})
+                            </Typography>
+                        </Box>
+                        <Box>
+                            <Typography variant="body2">
+                                {validationResult.details.has_low_bloom && validationResult.details.has_medium_bloom && validationResult.details.has_high_bloom ? '✔' : '❌'} Bloom Coverage: 
+                                {validationResult.details.has_low_bloom && validationResult.details.has_medium_bloom && validationResult.details.has_high_bloom ? ' OK' : ' Missing Levels'}
+                            </Typography>
+                            {!validationResult.valid && validationResult.errors.length > 0 && (
+                                <Box sx={{ mt: 1 }}>
+                                    {validationResult.errors.map((e, i) => (
+                                        <Typography key={i} variant="caption" color="error" display="block">• {e}</Typography>
+                                    ))}
+                                </Box>
+                            )}
+                        </Box>
+                    </Box>
+                </Card>
+            )}
 
             <Card>
                 <Table>
@@ -322,18 +393,21 @@ export default function QuestionBank() {
             </Dialog>
 
             <Dialog open={generateDialogOpen} onClose={() => setGenerateDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Generate AI Question</DialogTitle>
+                <DialogTitle>Generate AI Question Paper</DialogTitle>
                 <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                        The AI will select the best subset of questions from your Question Bank that match exactly the Target Marks and strictly satisfy the Difficulty (40/30/30) and Bloom's Taxonomy rules.
+                    </Typography>
                     <TextField 
-                        label="Topic or Keywords" 
+                        label="Target Total Marks" 
+                        type="number" 
                         fullWidth 
-                        value={aiTopic} 
-                        onChange={(e) => setAiTopic(e.target.value)}
-                        placeholder="e.g. Laws of Thermodynamics"
+                        value={aiMarks} 
+                        onChange={(e) => setAiMarks(Number(e.target.value))}
                     />
                     <TextField 
                         select 
-                        label="Difficulty" 
+                        label="Target Difficulty (for flexible slots)" 
                         fullWidth 
                         value={aiDifficulty} 
                         onChange={(e) => setAiDifficulty(e.target.value)}
@@ -342,18 +416,11 @@ export default function QuestionBank() {
                         <MenuItem value="MEDIUM">MEDIUM</MenuItem>
                         <MenuItem value="HARD">HARD</MenuItem>
                     </TextField>
-                    <TextField 
-                        label="Marks" 
-                        type="number" 
-                        fullWidth 
-                        value={aiMarks} 
-                        onChange={(e) => setAiMarks(Number(e.target.value))}
-                    />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setGenerateDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleAIGenerate} variant="contained" color="primary" disabled={aiLoading || !aiTopic.trim()}>
-                        {aiLoading ? <CircularProgress size={24} /> : "Generate"}
+                    <Button onClick={handleAIGenerate} variant="contained" color="primary" disabled={aiLoading || !aiMarks}>
+                        {aiLoading ? "Generating..." : "Generate Paper"}
                     </Button>
                 </DialogActions>
             </Dialog>
