@@ -16,6 +16,7 @@ export default function QuestionPaper() {
     const [difficulty, setDifficulty] = useState('medium');
     const [numShort, setNumShort] = useState(5);
     const [numLong, setNumLong] = useState(3);
+    const [courseSpecs, setCourseSpecs] = useState('');
     const [saving, setSaving] = useState(false);
 
     const [loading, setLoading] = useState(false);
@@ -66,6 +67,7 @@ export default function QuestionPaper() {
                 subjectId: selectedSubject,
                 courseOutcomeIds: selectedCos,
                 difficulty,
+                courseSpecifications: courseSpecs,
                 marksDistribution: {
                     short: parseInt(numShort),
                     long: parseInt(numLong)
@@ -173,6 +175,16 @@ export default function QuestionPaper() {
                             <MenuItem value="medium">Medium</MenuItem>
                             <MenuItem value="hard">Hard</MenuItem>
                         </TextField>
+
+                        <TextField
+                            label="Course Specifications / Syllabus Details (Optional)"
+                            multiline
+                            rows={4}
+                            value={courseSpecs}
+                            onChange={(e) => setCourseSpecs(e.target.value)}
+                            placeholder="Paste syllabus topics, specific guidelines, or constraints here..."
+                            fullWidth
+                        />
 
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <TextField

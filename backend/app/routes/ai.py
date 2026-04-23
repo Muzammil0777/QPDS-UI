@@ -45,6 +45,7 @@ def generate_paper():
         subject_id = data.get('subjectId')
         co_ids = data.get('courseOutcomeIds', [])
         difficulty = data.get('difficulty', 'medium')
+        course_specs = data.get('courseSpecifications', '')
         marks_distribution = data.get('marksDistribution', {"short": 5, "long": 3})
 
         subject = Subject.query.get(subject_id)
@@ -63,12 +64,14 @@ def generate_paper():
         num_short = marks_distribution.get('short', 0)
         num_long = marks_distribution.get('long', 0)
 
+        specs_text = f"\nCourse Specifications / Syllabus Constraints:\n{course_specs}\n" if course_specs.strip() else ""
+
         system_prompt = "You are an exam paper setter. Return strictly VALID JSON only. No markdown formatting, no explanations."
         user_prompt = f"""Create a structured question paper.
 Subject: {subject.name}
 Course Outcomes: {', '.join(co_list)}
 Difficulty: {difficulty}
-Requirements: Exactly {num_short} Short Questions and {num_long} Long Questions.
+Requirements: Exactly {num_short} Short Questions and {num_long} Long Questions.{specs_text}
 
 Format:
 Section A: Short questions (2-3 lines). Assign marks (e.g., 2, 3, or 5).
