@@ -48,15 +48,28 @@ def generate_paper():
         course_specs = data.get('courseSpecifications', '')
         marks_distribution = data.get('marksDistribution', {"short": 5, "long": 3})
 
-        subject = Subject.query.get(subject_id)
+        import uuid
+        try:
+            s_uuid = uuid.UUID(str(subject_id)) if subject_id else None
+        except ValueError:
+            return jsonify({'error': 'Invalid subjectId format'}), 400
+
+        parsed_co_ids = []
+        for cid in co_ids:
+            try:
+                parsed_co_ids.append(uuid.UUID(str(cid)))
+            except ValueError:
+                pass
+
+        subject = Subject.query.get(s_uuid)
         if not subject:
             return jsonify({'error': 'Subject not found'}), 404
 
-        cos = CourseOutcome.query.filter(CourseOutcome.id.in_(co_ids)).all()
+        cos = CourseOutcome.query.filter(CourseOutcome.id.in_(parsed_co_ids)).all()
         co_list = [f"{co.co_code}: {co.description}" for co in cos]
 
         # ── Fetch existing questions from DB to prevent duplication ──
-        existing_questions = Question.query.filter_by(subject_id=subject_id).all()
+        existing_questions = Question.query.filter_by(subject_id=s_uuid).all()
         existing_q_texts = []
         for q in existing_questions:
             q_text = extract_text_from_blocks(q.editor_data.get('blocks', []))
@@ -112,15 +125,15 @@ STRICT RULES:
    - 5 marks: Conceptual explanation or short comparison (half-page answer expected)
    - 8-10 marks: Analytical question requiring worked examples, diagrams, or multi-step reasoning (1-2 page answer)
    - 12+ marks: Comprehensive question with sub-parts covering multiple concepts (2+ page answer)
-6. DIVERSITY: Spread questions across different course outcomes and syllabus topics. 
-   Do not cluster multiple questions on the same narrow sub-topic."""
+6. DIVERSITY AND CO ADHERENCE: Every question must target exactly one of the provided Course Outcomes. If multiple Course Outcomes are listed, spread questions across them. If only one Course Outcome is provided, all questions must target that single outcome. Do NOT generate questions testing concepts outside the provided course outcomes."""
 
         # ── Improved user prompt ──
         user_prompt = f"""Generate an examination question paper for the following subject.
 
 SUBJECT: {subject.name}
 
-COURSE OUTCOMES TO ASSESS:
+COURSE OUTCOMES TO ASSESS (MANDATORY CONSTRAINT):
+Only generate questions that directly assess the following Course Outcomes. Do not generate questions for any other topics or other course outcomes.
 {chr(10).join(f"  - {co}" for co in co_list)}
 {syllabus_section}
 OVERALL DIFFICULTY LEVEL: {difficulty}
@@ -130,19 +143,25 @@ REQUIREMENTS:
   * Each question should be answerable in 2-5 sentences
   * Assign marks: 2, 3, or 5 per question (matching question depth)
   * Test recall, definitions, basic understanding, or simple applications
-  * Each question should target a DIFFERENT topic from the syllabus
+  * Each question must map to one of the provided course outcomes above
 
 - Section B: Exactly {num_long} Long Answer Questions
   * Each question should require detailed explanation, derivation, or analysis
   * Assign marks: 8, 10, or 12 per question (matching question depth)
   * May include sub-parts (a, b, c) for higher-mark questions
   * Test higher-order thinking: analysis, evaluation, design, or comparison
-  * Each question should cover a DIFFERENT major topic area
+  * Each question must map to one of the provided course outcomes above
 {existing_questions_block}
-RETURN THIS EXACT JSON STRUCTURE:
+RETURN THIS EXACT JSON STRUCTURE (Include the "coCode" property for each question to specify which Course Outcome it belongs to, using the format e.g. "CO1", "CO2"):
 {{
-  "sectionA": [{{"text": "question text here", "marks": 5}}, ...],
-  "sectionB": [{{"text": "question text here", "marks": 10}}, ...],
+  "sectionA": [
+    {{"text": "question text here", "marks": 5, "coCode": "CO1"}},
+    ...
+  ],
+  "sectionB": [
+    {{"text": "question text here", "marks": 10, "coCode": "CO2"}},
+    ...
+  ],
   "totalQuestions": {num_short + num_long}
 }}"""
 
@@ -162,6 +181,25 @@ RETURN THIS EXACT JSON STRUCTURE:
              generated_text = generated_text.split('```')[1].split('```')[0]
              
         result = json.loads(generated_text.strip())
+
+        # Resolve coCode to courseOutcomeId in backend before returning
+        co_code_to_id = {co.co_code: str(co.id) for co in cos}
+        
+        # Populate courseOutcomeId on each question in sectionA and sectionB
+        for q in result.get('sectionA', []):
+            co_code = q.get('coCode')
+            if co_code and co_code in co_code_to_id:
+                q['courseOutcomeId'] = co_code_to_id[co_code]
+            else:
+                q['courseOutcomeId'] = co_ids[0] if co_ids else None
+                
+        for q in result.get('sectionB', []):
+            co_code = q.get('coCode')
+            if co_code and co_code in co_code_to_id:
+                q['courseOutcomeId'] = co_code_to_id[co_code]
+            else:
+                q['courseOutcomeId'] = co_ids[0] if co_ids else None
+
         return jsonify(result)
 
     except Exception as e:
@@ -284,7 +322,12 @@ def generate_single_question():
         user_id = get_jwt_identity()
         from ..models import User, AILog
         from ..services.bloom_service import classify_bloom_level, map_to_difficulty
-        user = User.query.get(user_id)
+        import uuid
+        try:
+            u_uuid = uuid.UUID(str(user_id))
+        except ValueError:
+            return jsonify({'error': 'Invalid User ID format'}), 400
+        user = User.query.get(u_uuid)
         
         # 1. Protect & Restrict Endpoint
         if not user or user.role != 'ADMIN':
@@ -303,7 +346,11 @@ def generate_single_question():
         if not subject_id or not topic:
             return jsonify({'error': 'Missing subjectId or topic field.'}), 400
 
-        subject = Subject.query.get(subject_id)
+        try:
+            s_uuid = uuid.UUID(str(subject_id))
+        except ValueError:
+            return jsonify({'error': 'Invalid subjectId format'}), 400
+        subject = Subject.query.get(s_uuid)
         if not subject:
             return jsonify({'error': 'Subject not found'}), 404
 

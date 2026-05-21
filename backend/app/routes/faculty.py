@@ -10,11 +10,16 @@ bp = Blueprint('faculty', __name__, url_prefix='/faculty')
 @jwt_required()
 def get_my_subjects():
     user_id = get_jwt_identity()
+    import uuid
+    try:
+        u_uuid = uuid.UUID(str(user_id))
+    except ValueError:
+        return jsonify({'error': 'Invalid User ID format'}), 400
     
     # Query assigned subjects
     assigned = db.session.query(Subject)\
         .join(FacultySubject)\
-        .filter(FacultySubject.faculty_id == user_id)\
+        .filter(FacultySubject.faculty_id == u_uuid)\
         .all()
         
     result = []
@@ -33,7 +38,12 @@ def get_my_subjects():
 @jwt_required()
 def get_current_faculty():
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    import uuid
+    try:
+        u_uuid = uuid.UUID(str(user_id))
+    except ValueError:
+        return jsonify({'error': 'Invalid User ID format'}), 400
+    user = User.query.get(u_uuid)
     if not user:
         return jsonify({'error': 'User not found'}), 404
     return jsonify(user.to_dict()), 200
@@ -54,6 +64,11 @@ def upload_profile_picture():
         return jsonify({'error': 'No selected file'}), 400
     if file and allowed_file(file.filename):
         user_id = get_jwt_identity()
+        import uuid
+        try:
+            u_uuid = uuid.UUID(str(user_id))
+        except ValueError:
+            return jsonify({'error': 'Invalid User ID format'}), 400
         filename = secure_filename(f"{user_id}_{file.filename}")
         
         # Save to static/uploads or similar
@@ -65,7 +80,7 @@ def upload_profile_picture():
         file.save(file_path)
         
         # Update user record
-        user = User.query.get(user_id)
+        user = User.query.get(u_uuid)
         if user:
             # Construct URL (assuming static serve)
             # In a real app we might serve via a route or Nginx

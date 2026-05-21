@@ -79,6 +79,9 @@ def test_full_workflow(client, app):
         sub = Subject(code='CS101', semester_id=sem.id, academic_year_id=ay.id)
         db.session.add(sub)
         
+        sem_id = sem.id
+        ay_id = ay.id
+        
         db.session.commit()
         
         # Get IDs
@@ -138,7 +141,7 @@ def test_full_workflow(client, app):
     # Create Question (Fail - Unassigned Subject)
     # Create another subject
     with app.app_context():
-        sub2 = Subject(code='CS102', semester_id=sem.id, academic_year_id=ay.id)
+        sub2 = Subject(code='CS102', semester_id=sem_id, academic_year_id=ay_id)
         db.session.add(sub2)
         db.session.commit()
         

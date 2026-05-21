@@ -67,9 +67,29 @@ def create_bulk_questions():
     try:
         user_id = get_jwt_identity()
         from ..models import User, db
-        user = User.query.get(user_id)
+        import uuid
+        
+        def parse_uuid(val):
+            if not val:
+                return None
+            if isinstance(val, uuid.UUID):
+                return val
+            try:
+                return uuid.UUID(str(val))
+            except ValueError:
+                return None
+
+        u_uuid = parse_uuid(user_id)
+        if not u_uuid:
+            return jsonify({'error': 'Invalid User ID format'}), 400
+
+        user = User.query.get(u_uuid)
         if not user or user.role != 'ADMIN':
             return jsonify({'error': 'Unauthorized: Only admins can bulk save AI questions'}), 403
+
+        s_uuid = parse_uuid(subject_id)
+        if not s_uuid:
+            return jsonify({'error': 'Invalid subjectId format'}), 400
 
         # Optional metadata
         difficulty = data.get('difficulty', 'MEDIUM').upper()
@@ -78,15 +98,8 @@ def create_bulk_questions():
 
         # Simple bulk creation logic
         saved_count = 0
-        
-        # Heuristic for CO assignment:
-        # If COs provided, assign the first one? Or leave null?
-        # User selected multiple COs for paper. We can assign the first one or leave it blank (mapped to subject only).
-        # Better: leave it nullable if unsure, or assign the first valid one.
-        # Let's check if valid.
-        assigned_co_id = None
-        if co_ids and len(co_ids) > 0:
-            assigned_co_id = co_ids[0] # Just assign first for now to link it somewhere
+
+        assigned_co_id = parse_uuid(co_ids[0]) if co_ids else None
             
         from datetime import datetime
         import time
@@ -121,10 +134,12 @@ def create_bulk_questions():
                 }
             }
             
+            q_co_id = parse_uuid(q_item.get('courseOutcomeId')) or assigned_co_id
+
             new_q = Question(
-                subject_id=subject_id,
-                course_outcome_id=assigned_co_id, # Optional
-                creator_id=user_id,
+                subject_id=s_uuid,
+                course_outcome_id=q_co_id, # Optional
+                creator_id=u_uuid,
                 source="AI",
                 difficulty=computed_difficulty,
                 bloom_level=computed_bloom_level,
@@ -153,6 +168,9 @@ def get_questions():
     source = request.args.get('source')
     creator_id = request.args.get('creatorId')
     include_used = request.args.get('includeUsed', 'false').lower() == 'true'
+    semester = request.args.get('semester')
+    academic_year = request.args.get('academicYear')
+    subcode = request.args.get('subcode')
     
     recently_used_ids_str = set()
     recently_used_ids_obj = set()
@@ -177,6 +195,15 @@ def get_questions():
     query = Question.query
     if subject_id:
         query = query.filter_by(subject_id=subject_id)
+    if semester or academic_year or subcode:
+        from ..models import Subject, AcademicYear, Semester
+        query = query.join(Subject).join(AcademicYear).join(Semester)
+        if semester:
+            query = query.filter(Semester.number == int(semester))
+        if academic_year:
+            query = query.filter(AcademicYear.label == academic_year)
+        if subcode:
+            query = query.filter(Subject.code == subcode)
     if difficulty:
         query = query.filter_by(difficulty=difficulty)
     if source:
@@ -202,7 +229,12 @@ def get_questions():
 def get_single_question(question_id):
     try:
         from ..models import db
-        question = Question.query.get(question_id)
+        import uuid
+        try:
+            q_uuid = uuid.UUID(str(question_id))
+        except ValueError:
+            return jsonify({'error': 'Invalid question ID format'}), 400
+        question = Question.query.get(q_uuid)
         if not question:
             return jsonify({'error': 'Question not found'}), 404
         return jsonify(question.to_dict()), 200
@@ -214,7 +246,12 @@ def get_single_question(question_id):
 def delete_question(question_id):
     try:
         from ..models import db
-        question = Question.query.get(question_id)
+        import uuid
+        try:
+            q_uuid = uuid.UUID(str(question_id))
+        except ValueError:
+            return jsonify({'error': 'Invalid question ID format'}), 400
+        question = Question.query.get(q_uuid)
         if not question:
             return jsonify({'error': 'Question not found'}), 404
             
@@ -233,7 +270,12 @@ def update_question(question_id):
 
     try:
         from ..models import db
-        question = Question.query.get(question_id)
+        import uuid
+        try:
+            q_uuid = uuid.UUID(str(question_id))
+        except ValueError:
+            return jsonify({'error': 'Invalid question ID format'}), 400
+        question = Question.query.get(q_uuid)
         if not question:
             return jsonify({'error': 'Question not found'}), 404
             
@@ -265,7 +307,14 @@ def update_question(question_id):
         if 'courseOutcomeId' in data:
             # Handle empty string or null to unassign
             co_id = data['courseOutcomeId']
-            question.course_outcome_id = co_id if co_id else None
+            if co_id:
+                try:
+                    co_uuid = uuid.UUID(str(co_id))
+                except ValueError:
+                    return jsonify({'error': 'Invalid courseOutcomeId format'}), 400
+            else:
+                co_uuid = None
+            question.course_outcome_id = co_uuid
             
         db.session.commit()
         return jsonify({'message': 'Question updated successfully', 'question': question.to_dict()}), 200

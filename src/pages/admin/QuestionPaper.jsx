@@ -95,11 +95,20 @@ export default function QuestionPaper() {
         setSaving(true);
         try {
             // Flatten questions
-            // Flatten questions
-            // generatedPaper.sectionA is now [{text, marks}, ...]
+            // Map each question with its individual courseOutcomeId from AI mapping
             const questionsToSave = [
-                ...(generatedPaper.sectionA?.map(q => ({ text: q.text, marks: q.marks, type: 'short' })) || []),
-                ...(generatedPaper.sectionB?.map(q => ({ text: q.text, marks: q.marks, type: 'long' })) || [])
+                ...(generatedPaper.sectionA?.map(q => ({ 
+                    text: q.text, 
+                    marks: q.marks, 
+                    type: 'short',
+                    courseOutcomeId: q.courseOutcomeId 
+                })) || []),
+                ...(generatedPaper.sectionB?.map(q => ({ 
+                    text: q.text, 
+                    marks: q.marks, 
+                    type: 'long',
+                    courseOutcomeId: q.courseOutcomeId 
+                })) || [])
             ];
 
             await api.post('/api/questions/bulk', {
@@ -223,40 +232,89 @@ export default function QuestionPaper() {
                 maxWidth="md"
                 fullWidth
             >
-                <DialogTitle>Generated Question Paper Draft</DialogTitle>
+                <DialogTitle sx={{ fontWeight: 'bold' }}>Generated Question Paper Draft</DialogTitle>
                 <DialogContent dividers>
                     {generatedPaper && (
                         <Box>
-                            <Typography variant="h6" gutterBottom color="primary">Section A (Short Questions)</Typography>
+                            <Typography variant="h6" gutterBottom color="primary" sx={{ fontWeight: 600 }}>
+                                Section A (Short Questions)
+                            </Typography>
                             <List dense>
                                 {generatedPaper.sectionA?.map((q, idx) => (
-                                    <ListItem key={idx}>
-                                        <ListItemText primary={`${idx + 1}. ${q.text} (${q.marks} Marks)`} />
+                                    <ListItem 
+                                        key={idx}
+                                        secondaryAction={
+                                            q.coCode && (
+                                                <Chip 
+                                                    label={q.coCode} 
+                                                    size="small" 
+                                                    color="primary" 
+                                                    variant="outlined" 
+                                                    sx={{ 
+                                                        fontWeight: 'bold',
+                                                        borderColor: 'primary.main',
+                                                        backgroundColor: 'action.hover'
+                                                    }}
+                                                />
+                                            )
+                                        }
+                                        sx={{ borderBottom: '1px solid rgba(0, 0, 0, 0.08)', py: 1.5 }}
+                                    >
+                                        <ListItemText 
+                                            primary={`${idx + 1}. ${q.text}`} 
+                                            secondary={`${q.marks} Marks`}
+                                            sx={{ pr: 8 }}
+                                        />
                                     </ListItem>
                                 ))}
                             </List>
-                            <Divider sx={{ my: 2 }} />
-                            <Typography variant="h6" gutterBottom color="primary">Section B (Long Questions)</Typography>
+                            
+                            <Divider sx={{ my: 3 }} />
+                            
+                            <Typography variant="h6" gutterBottom color="primary" sx={{ fontWeight: 600, mt: 2 }}>
+                                Section B (Long Questions)
+                            </Typography>
                             <List dense>
                                 {generatedPaper.sectionB?.map((q, idx) => (
-                                    <ListItem key={idx}>
-                                        <ListItemText primary={`${idx + 1}. ${q.text} (${q.marks} Marks)`} />
+                                    <ListItem 
+                                        key={idx}
+                                        secondaryAction={
+                                            q.coCode && (
+                                                <Chip 
+                                                    label={q.coCode} 
+                                                    size="small" 
+                                                    color="primary" 
+                                                    variant="outlined" 
+                                                    sx={{ 
+                                                        fontWeight: 'bold',
+                                                        borderColor: 'primary.main',
+                                                        backgroundColor: 'action.hover'
+                                                    }}
+                                                />
+                                            )
+                                        }
+                                        sx={{ borderBottom: '1px solid rgba(0, 0, 0, 0.08)', py: 1.5 }}
+                                    >
+                                        <ListItemText 
+                                            primary={`${idx + 1}. ${q.text}`} 
+                                            secondary={`${q.marks} Marks`}
+                                            sx={{ pr: 8 }}
+                                        />
                                     </ListItem>
                                 ))}
                             </List>
-                            <Typography variant="caption" display="block" sx={{ mt: 2 }}>
+                            <Typography variant="subtitle2" display="block" sx={{ mt: 3, fontWeight: 'medium', color: 'text.secondary' }}>
                                 Total Questions: {generatedPaper.totalQuestions}
                             </Typography>
                         </Box>
                     )}
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCopy}>Copy to Clipboard</Button>
-                    <Button onClick={handleSave} disabled={saving} variant="contained" color="success">
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={handleCopy} variant="outlined" color="primary">Copy to Clipboard</Button>
+                    <Button onClick={handleSave} disabled={saving} variant="contained" color="success" sx={{ px: 3 }}>
                         {saving ? 'Saving...' : 'Save to Question Bank'}
                     </Button>
-                    <Button onClick={() => setOpenDialog(false)}>Close</Button>
-                    <Button onClick={() => setOpenDialog(false)}>Close</Button>
+                    <Button onClick={() => setOpenDialog(false)} color="inherit">Close</Button>
                 </DialogActions>
             </Dialog>
         </Box>

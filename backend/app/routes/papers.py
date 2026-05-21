@@ -6,7 +6,12 @@ from ..models import db, Paper, Section, PaperQuestion, QuestionUsage, Question,
 bp = Blueprint('papers', __name__, url_prefix='/api/papers')
 
 def get_paper_or_404(paper_id):
-    paper = Paper.query.get(paper_id)
+    import uuid
+    try:
+        p_uuid = uuid.UUID(str(paper_id))
+    except ValueError:
+        return None
+    paper = Paper.query.get(p_uuid)
     return paper
 
 # A. Create Draft
@@ -21,9 +26,15 @@ def create_draft():
     if not subject_id or not title:
         return jsonify({'error': 'Missing subjectId or title'}), 400
         
+    import uuid
+    try:
+        sub_uuid = uuid.UUID(str(subject_id))
+    except ValueError:
+        return jsonify({'error': 'Invalid subjectId format'}), 400
+        
     try:
         paper = Paper(
-            subject_id=subject_id,
+            subject_id=sub_uuid,
             title=title,
             status="DRAFT",
             created_at=datetime.utcnow()
@@ -42,10 +53,14 @@ def create_draft():
         
         # Inject Initial Questions into Default Section
         for idx, q_id in enumerate(initial_question_ids):
+            try:
+                q_uuid = uuid.UUID(str(q_id))
+            except ValueError:
+                continue
             pq = PaperQuestion(
                 paper_id=paper.id,
                 section_id=section.id,
-                question_id=q_id,
+                question_id=q_uuid,
                 order_index=idx
             )
             db.session.add(pq)
@@ -228,7 +243,14 @@ def validate_draft():
     question_ids = data.get('questionIds', [])
     total_marks = data.get('totalMarks', 100)
     
-    questions = Question.query.filter(Question.id.in_(question_ids)).all()
+    import uuid
+    parsed_ids = []
+    for qid in question_ids:
+        try:
+            parsed_ids.append(uuid.UUID(str(qid)))
+        except ValueError:
+            pass
+    questions = Question.query.filter(Question.id.in_(parsed_ids)).all()
     from ..services.validation_service import validate_question_paper
     result = validate_question_paper(questions, total_marks)
     return jsonify(result), 200
@@ -245,7 +267,13 @@ def auto_generate_paper():
     if not subject_id:
         return jsonify({'error': 'Subject ID required'}), 400
         
-    questions = Question.query.filter_by(subject_id=subject_id).all()
+    import uuid
+    try:
+        sub_uuid = uuid.UUID(str(subject_id))
+    except ValueError:
+        return jsonify({'error': 'Invalid subjectId format'}), 400
+        
+    questions = Question.query.filter_by(subject_id=sub_uuid).all()
     if not questions:
         return jsonify({'error': 'No questions found for this subject'}), 400
         
@@ -291,9 +319,9 @@ def auto_generate_paper():
         return jsonify({'error': 'Could not find a combination of questions satisfying the 40/30/30 distribution and Bloom coverage rules. Add more varied questions to the bank.'}), 400
         
     try:
-        subject = Subject.query.get(subject_id)
+        subject = Subject.query.get(sub_uuid)
         paper = Paper(
-            subject_id=subject_id,
+            subject_id=sub_uuid,
             title=f"Auto-Generated Paper ({total_marks} Marks)",
             status="DRAFT",
             created_at=datetime.utcnow()
