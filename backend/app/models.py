@@ -84,8 +84,8 @@ class FacultySubject(db.Model):
     __tablename__ = 'faculty_subjects'
 
     id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
-    faculty_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=False)
-    subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=False)
+    faculty_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=False, index=True)
+    subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=False, index=True)
     assigned_by = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=False)
     assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -119,9 +119,9 @@ class Question(db.Model):
     __tablename__ = 'questions'
 
     id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
-    subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=False)
+    subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=False, index=True)
     course_outcome_id = db.Column(db.Uuid, db.ForeignKey('course_outcomes.id'), nullable=True)
-    creator_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=False)
+    creator_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=False, index=True)
     source = db.Column(db.String(10), nullable=False, default="MANUAL")
     difficulty = db.Column(db.String(10), nullable=False, default="MEDIUM")
     bloom_level = db.Column(db.String(20), nullable=False, default="understand")
@@ -153,7 +153,7 @@ class Paper(db.Model):
     __tablename__ = 'papers'
 
     id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
-    subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=False)
+    subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=False, index=True)
     title = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(20), nullable=False, default="DRAFT")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

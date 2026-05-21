@@ -22,6 +22,7 @@
     "@testing-library/user-event": "^13.5.0",
     "@tinymce/tinymce-react": "^6.3.0",
     "axios": "^1.13.2",
+    "axios-retry": "^4.5.0",
     "better-react-mathjax": "^2.3.0",
     "editorjs-html": "^4.0.5",
     "editorjs-text-alignment-blocktune": "^1.0.3",

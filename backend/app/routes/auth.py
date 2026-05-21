@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token
 import bcrypt
+import time as _time
 from ..models import User, db
 from captcha.image import ImageCaptcha
 import base64
@@ -9,10 +10,21 @@ import uuid
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
+# Fix #4: Store (text, timestamp) tuples to enable TTL-based cleanup
 CAPTCHA_STORE = {}
+CAPTCHA_TTL_SECONDS = 300  # 5 minutes
+
+def _cleanup_expired_captchas():
+    """Remove CAPTCHAs older than 5 minutes to prevent memory leak."""
+    now = _time.time()
+    expired = [k for k, (_, ts) in CAPTCHA_STORE.items() if now - ts > CAPTCHA_TTL_SECONDS]
+    for k in expired:
+        del CAPTCHA_STORE[k]
 
 @bp.route('/captcha', methods=['GET'])
 def get_captcha():
+    _cleanup_expired_captchas()  # Purge stale entries on every new request
+
     image = ImageCaptcha(width=280, height=90)
     captcha_text = str(uuid.uuid4())[:6].upper()
     data = image.generate(captcha_text)
@@ -22,7 +34,7 @@ def get_captcha():
     encoded_img = base64.b64encode(image_io.getvalue()).decode('ascii')
     
     captcha_id = str(uuid.uuid4())
-    CAPTCHA_STORE[captcha_id] = captcha_text
+    CAPTCHA_STORE[captcha_id] = (captcha_text, _time.time())
     
     return jsonify({
         'captchaId': captcha_id,
@@ -33,12 +45,18 @@ def verify_captcha(captcha_id, captcha_input):
     if not captcha_id or not captcha_input:
         return False
     
-    stored_code = CAPTCHA_STORE.get(captcha_id)
-    if not stored_code:
+    entry = CAPTCHA_STORE.get(captcha_id)
+    if not entry:
         return False
+    
+    stored_code, created_at = entry
     
     # Remove used captcha
     del CAPTCHA_STORE[captcha_id]
+    
+    # Reject if expired
+    if _time.time() - created_at > CAPTCHA_TTL_SECONDS:
+        return False
     
     return stored_code.upper() == captcha_input.upper()
 

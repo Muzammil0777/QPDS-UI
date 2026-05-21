@@ -16,10 +16,6 @@ def check_admin():
     # Allow CORS preflight requests
     if request.method == 'OPTIONS':
         return
-        
-    # debug bypass
-    if request.endpoint and 'debug_faculty' in request.endpoint:
-        return
 
     # Verify JWT manually for non-OPTIONS requests
     try:
@@ -30,24 +26,6 @@ def check_admin():
     if not admin_required():
          return jsonify({'error': 'Admin privilege required'}), 403
 
-@bp.route('/debug-faculty', methods=['GET'])
-def debug_faculty():
-    # Public debug route
-    all_users = User.query.all()
-    filtered_by = User.query.filter_by(role='FACULTY').all()
-    filter_equals = User.query.filter(User.role == 'FACULTY').all()
-    filter_ilike = User.query.filter(User.role.ilike('faculty')).all()
-    
-    # Check for whitespace
-    roles = [f"'{u.role}'" for u in all_users]
-    
-    return jsonify({
-        "total": len(all_users),
-        "filtered_by": len(filtered_by),
-        "filter_equals": len(filter_equals),
-        "filter_ilike": len(filter_ilike),
-        "roles_debug": roles
-    }), 200
 
 @bp.route('/faculty', methods=['GET'])
 def get_faculty():

@@ -4,7 +4,7 @@ import json
 import math
 import time
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from huggingface_hub import InferenceClient
 from ..models import db, Question, Subject, CourseOutcome
 
@@ -55,42 +55,104 @@ def generate_paper():
         cos = CourseOutcome.query.filter(CourseOutcome.id.in_(co_ids)).all()
         co_list = [f"{co.co_code}: {co.description}" for co in cos]
 
-        # Use Qwen/Qwen2.5-7B-Instruct as default (Mistral-7B-Instruct-v0.2 often fails on free tier)
+        # ── Fetch existing questions from DB to prevent duplication ──
+        existing_questions = Question.query.filter_by(subject_id=subject_id).all()
+        existing_q_texts = []
+        for q in existing_questions:
+            q_text = extract_text_from_blocks(q.editor_data.get('blocks', []))
+            if q_text.strip():
+                existing_q_texts.append(q_text.strip())
+
+        # Build a concise list of existing questions (cap at 30 to stay within token limits)
+        existing_questions_block = ""
+        if existing_q_texts:
+            capped = existing_q_texts[:30]
+            numbered = [f"  {i+1}. {t[:200]}" for i, t in enumerate(capped)]
+            existing_questions_block = (
+                "\n\n=== EXISTING QUESTIONS IN DATABASE (DO NOT REPEAT OR PARAPHRASE THESE) ===\n"
+                + "\n".join(numbered)
+                + "\n=== END OF EXISTING QUESTIONS ===\n"
+            )
+
         model_id = os.getenv('HF_MODEL_QP', 'Qwen/Qwen2.5-7B-Instruct')
         client = get_hf_client(model_id)
 
-        # Interpret 'marksDistribution' as 'questionCounts' based on user requirement
-        # Frontend sends { "short": X, "long": Y }
         num_short = marks_distribution.get('short', 0)
         num_long = marks_distribution.get('long', 0)
 
-        specs_text = f"\nCourse Specifications / Syllabus Constraints:\n{course_specs}\n" if course_specs.strip() else ""
+        # ── Build syllabus context ──
+        syllabus_section = ""
+        if course_specs.strip():
+            syllabus_section = f"""
+=== SYLLABUS / COURSE SPECIFICATIONS (MANDATORY CONTEXT) ===
+{course_specs.strip()}
+=== END OF SYLLABUS ===
 
-        system_prompt = "You are an exam paper setter. Return strictly VALID JSON only. No markdown formatting, no explanations."
-        user_prompt = f"""Create a structured question paper.
-Subject: {subject.name}
-Course Outcomes: {', '.join(co_list)}
-Difficulty: {difficulty}
-Requirements: Exactly {num_short} Short Questions and {num_long} Long Questions.{specs_text}
-
-Format:
-Section A: Short questions (2-3 lines). Assign marks (e.g., 2, 3, or 5).
-Section B: Long questions (8-12 lines). Assign marks (e.g., 8, 10, or 12).
-
-JSON Structure:
-{{
-  "sectionA": [ {{"text": "question 1", "marks": 5}}, ...],
-  "sectionB": [ {{"text": "question 1", "marks": 10}}, ...],
-  "totalQuestions": {num_short + num_long}
-}}
+CRITICAL: Every question you generate MUST be directly traceable to a topic, concept, 
+or learning outcome listed in the syllabus above. Do NOT invent topics outside this scope.
 """
+
+        # ── Improved system prompt ──
+        system_prompt = """You are an expert university examination paper setter with deep subject-matter expertise. 
+Your task is to create high-quality, original examination questions that are:
+- Factually accurate and academically rigorous
+- Directly connected to the provided syllabus and course outcomes
+- Proportional in depth and complexity to the marks assigned
+- Completely unique — never repeating or paraphrasing existing questions
+
+STRICT RULES:
+1. OUTPUT FORMAT: Return strictly VALID JSON only. No markdown, no code fences, no explanations.
+2. SYLLABUS ADHERENCE: Every question must test a concept explicitly covered in the syllabus.
+3. NO REPETITION: If existing questions are provided, your generated questions must be semantically 
+   different — not rephrased, reworded, or restructured versions of them.
+4. FACTUAL ACCURACY: Do not generate questions with incorrect premises, made-up terminology, 
+   or misleading statements. Each question must be answerable by a student who has studied the syllabus.
+5. MARKS-QUALITY ALIGNMENT: The complexity and expected answer length must match the marks:
+   - 2-3 marks: Single-concept recall or definition (1-2 sentence answer expected)
+   - 5 marks: Conceptual explanation or short comparison (half-page answer expected)
+   - 8-10 marks: Analytical question requiring worked examples, diagrams, or multi-step reasoning (1-2 page answer)
+   - 12+ marks: Comprehensive question with sub-parts covering multiple concepts (2+ page answer)
+6. DIVERSITY: Spread questions across different course outcomes and syllabus topics. 
+   Do not cluster multiple questions on the same narrow sub-topic."""
+
+        # ── Improved user prompt ──
+        user_prompt = f"""Generate an examination question paper for the following subject.
+
+SUBJECT: {subject.name}
+
+COURSE OUTCOMES TO ASSESS:
+{chr(10).join(f"  - {co}" for co in co_list)}
+{syllabus_section}
+OVERALL DIFFICULTY LEVEL: {difficulty}
+
+REQUIREMENTS:
+- Section A: Exactly {num_short} Short Answer Questions
+  * Each question should be answerable in 2-5 sentences
+  * Assign marks: 2, 3, or 5 per question (matching question depth)
+  * Test recall, definitions, basic understanding, or simple applications
+  * Each question should target a DIFFERENT topic from the syllabus
+
+- Section B: Exactly {num_long} Long Answer Questions
+  * Each question should require detailed explanation, derivation, or analysis
+  * Assign marks: 8, 10, or 12 per question (matching question depth)
+  * May include sub-parts (a, b, c) for higher-mark questions
+  * Test higher-order thinking: analysis, evaluation, design, or comparison
+  * Each question should cover a DIFFERENT major topic area
+{existing_questions_block}
+RETURN THIS EXACT JSON STRUCTURE:
+{{
+  "sectionA": [{{"text": "question text here", "marks": 5}}, ...],
+  "sectionB": [{{"text": "question text here", "marks": 10}}, ...],
+  "totalQuestions": {num_short + num_long}
+}}"""
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ]
 
-        # Chat Completion API
-        output = client.chat_completion(messages=messages, max_tokens=1500, temperature=0.7)
+        # Use slightly lower temperature for more focused, factual output
+        output = client.chat_completion(messages=messages, max_tokens=2500, temperature=0.5)
         generated_text = output.choices[0].message.content.strip()
 
         # Cleanup JSON
@@ -221,6 +283,7 @@ def generate_single_question():
     try:
         user_id = get_jwt_identity()
         from ..models import User, AILog
+        from ..services.bloom_service import classify_bloom_level, map_to_difficulty
         user = User.query.get(user_id)
         
         # 1. Protect & Restrict Endpoint
@@ -244,11 +307,53 @@ def generate_single_question():
         if not subject:
             return jsonify({'error': 'Subject not found'}), 404
 
+        # ── Fetch existing questions on this topic to avoid repetition ──
+        existing_questions = Question.query.filter_by(subject_id=subject_id).all()
+        existing_q_texts = []
+        for q in existing_questions:
+            q_text = extract_text_from_blocks(q.editor_data.get('blocks', []))
+            if q_text.strip():
+                existing_q_texts.append(q_text.strip())
+
+        existing_block = ""
+        if existing_q_texts:
+            capped = existing_q_texts[:20]
+            numbered = [f"  {i+1}. {t[:150]}" for i, t in enumerate(capped)]
+            existing_block = (
+                "\n\nEXISTING QUESTIONS (DO NOT repeat, rephrase, or paraphrase any of these):\n"
+                + "\n".join(numbered) + "\n"
+            )
+
+        # ── Marks-to-depth guidance ──
+        if marks <= 3:
+            depth_guide = "This is a low-mark question. Expect a 1-2 sentence answer. Test a single concept, definition, or factual recall."
+        elif marks <= 5:
+            depth_guide = "This is a mid-mark question. Expect a half-page answer. Test conceptual understanding, comparison, or a short explanation with an example."
+        elif marks <= 10:
+            depth_guide = "This is a high-mark question. Expect a 1-2 page answer. Test analytical thinking, worked examples, derivations, or multi-step reasoning."
+        else:
+            depth_guide = "This is a comprehensive question. Expect a 2+ page answer. Include sub-parts (a, b, c) covering multiple related concepts."
+
         model_id = os.getenv('HF_MODEL_QP', 'Qwen/Qwen2.5-7B-Instruct')
         client = get_hf_client(model_id)
 
-        system_prompt = "You are an expert academic question setter. Return strictly VALID JSON. No extra text or markdown wrappers."
-        user_prompt = f"Create ONE generic examination question for the subject '{subject.name}'.\nTopic: {topic}\nDifficulty: {difficulty}\nMarks: {marks}\nReturn exactly this JSON format: {{ \"text\": \"Question text here\" }}"
+        system_prompt = """You are an expert university examination question setter. 
+Generate factually accurate, academically rigorous questions that are:
+- Directly relevant to the specified topic and subject
+- Proportional in depth and complexity to the assigned marks
+- Original and not a rephrasing of any existing question provided
+Return strictly VALID JSON only. No markdown, no code fences, no explanations."""
+
+        user_prompt = f"""Create ONE examination question.
+
+Subject: {subject.name}
+Topic: {topic}
+Difficulty: {difficulty}
+Marks: {marks}
+
+QUALITY GUIDELINE: {depth_guide}
+{existing_block}
+Return exactly this JSON: {{ "text": "Your question here" }}"""
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -256,7 +361,7 @@ def generate_single_question():
         ]
 
         # Call AI
-        output = client.chat_completion(messages=messages, max_tokens=800, temperature=0.7)
+        output = client.chat_completion(messages=messages, max_tokens=800, temperature=0.5)
         generated_text = output.choices[0].message.content.strip()
         
         # Safely parse text
@@ -272,14 +377,26 @@ def generate_single_question():
         except json.JSONDecodeError:
             q_text = clean_text
 
+        # Auto-classify Bloom's level and difficulty from the generated text
+        computed_bloom = classify_bloom_level(q_text)
+        computed_difficulty = map_to_difficulty(computed_bloom)
+
         # 3. Prevent Spoofing - Strict assignments
         new_q = Question(
             subject_id=subject.id,
-            editor_data={"time": int(time.time()), "blocks": [{"type": "paragraph", "data": {"text": q_text}}], "marks": marks},
+            editor_data={
+                "time": int(time.time()),
+                "blocks": [{"type": "paragraph", "data": {"text": q_text}}],
+                "marks": marks,
+                "meta": {
+                    "bloomLevel": computed_bloom,
+                    "difficulty": computed_difficulty
+                }
+            },
             creator_id=user.id,
             source="AI",
-            difficulty=difficulty,
-            is_active=True
+            difficulty=computed_difficulty,
+            bloom_level=computed_bloom
         )
         db.session.add(new_q)
         db.session.flush()
@@ -300,3 +417,4 @@ def generate_single_question():
         db.session.rollback()
         print(f"Generate AI Question Error: {e}")
         return jsonify({'error': str(e)}), 500
+
