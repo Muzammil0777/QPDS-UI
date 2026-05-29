@@ -19,3 +19,4 @@ captcha
 Pillow
 # Fix #1: Rate limiting middleware
 Flask-Limiter
+python-docx

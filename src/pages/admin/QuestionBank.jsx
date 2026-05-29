@@ -5,7 +5,7 @@ import {
     Box, Typography, Card, CardContent, TextField, MenuItem,
     Table, TableBody, TableCell, TableHead, TableRow,
     IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-    Alert, Snackbar, Checkbox, FormControlLabel, Switch, Chip
+    Alert, Snackbar, Checkbox, FormControlLabel, Switch, Chip, Pagination
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit'; // Placeholder for future use
@@ -24,6 +24,12 @@ export default function QuestionBank() {
     const [filterDifficulty, setFilterDifficulty] = useState('');
     const [filterSource, setFilterSource] = useState('');
     const [filterCreator, setFilterCreator] = useState('');
+    
+    // Pagination States
+    const [page, setPage] = useState(1);
+    const [limit] = useState(10);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalQuestions, setTotalQuestions] = useState(0);
 
     const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
     const [aiTopic, setAiTopic] = useState("");
@@ -37,12 +43,16 @@ export default function QuestionBank() {
     const [confirmDelete, setConfirmDelete] = useState(null);
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
-    const filteredQuestions = questions.filter(q => {
-        if (filterDifficulty && q.difficulty !== filterDifficulty) return false;
-        if (filterSource && q.source !== filterSource) return false;
-        if (filterCreator && !q.creatorName?.toLowerCase().includes(filterCreator.toLowerCase())) return false;
-        return true;
-    });
+    const filteredQuestions = questions; // Server handles filtering
+
+    const [debouncedCreator, setDebouncedCreator] = useState('');
+    
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedCreator(filterCreator);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [filterCreator]);
 
     useEffect(() => {
         fetchSubjects();
@@ -50,11 +60,12 @@ export default function QuestionBank() {
 
     useEffect(() => {
         if (selectedSubject) {
-            fetchQuestions(selectedSubject);
+            fetchQuestions(selectedSubject, 1);
+            setPage(1);
         } else {
             setQuestions([]);
         }
-    }, [selectedSubject, includeUsed]);
+    }, [selectedSubject, includeUsed, filterDifficulty, filterSource, debouncedCreator]);
 
     useEffect(() => {
         if (selectedQuestions.length === 0) {
@@ -85,10 +96,26 @@ export default function QuestionBank() {
         }
     };
 
-    const fetchQuestions = async (subId) => {
+    const fetchQuestions = async (subId, curPage = page) => {
         try {
-            const res = await api.get(`/api/questions?subjectId=${subId}&includeUsed=${includeUsed}`);
-            setQuestions(res.data);
+            let url = `/api/questions?subjectId=${subId}&includeUsed=${includeUsed}&page=${curPage}&limit=${limit}`;
+            if (filterDifficulty) url += `&difficulty=${filterDifficulty}`;
+            if (filterSource) url += `&source=${filterSource}`;
+            if (debouncedCreator) url += `&creatorName=${encodeURIComponent(debouncedCreator)}`;
+            
+            const res = await api.get(url);
+            
+            // Backend returns pagination dict or fallback flat array
+            if (res.data.questions) {
+                setQuestions(res.data.questions);
+                setTotalQuestions(res.data.total);
+                setTotalPages(res.data.pages);
+            } else {
+                // Backward compatibility fallback
+                setQuestions(res.data);
+                setTotalQuestions(res.data.length);
+                setTotalPages(1);
+            }
         } catch (err) {
             console.error(err);
         }
@@ -99,7 +126,7 @@ export default function QuestionBank() {
         try {
             await api.delete(`/api/questions/${confirmDelete}`);
             setNotification({ open: true, message: 'Question deleted successfully', severity: 'success' });
-            fetchQuestions(selectedSubject);
+            fetchQuestions(selectedSubject, page);
         } catch (err) {
             setNotification({ open: true, message: 'Failed to delete question', severity: 'error' });
         } finally {
@@ -378,6 +405,19 @@ export default function QuestionBank() {
                         )}
                     </TableBody>
                 </Table>
+                {totalPages > 1 && (
+                    <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
+                        <Pagination 
+                            count={totalPages} 
+                            page={page} 
+                            onChange={(e, val) => {
+                                setPage(val);
+                                fetchQuestions(selectedSubject, val);
+                            }} 
+                            color="primary"
+                        />
+                    </Box>
+                )}
             </Card>
 
             {/* Delete Confirmation Dialog */}

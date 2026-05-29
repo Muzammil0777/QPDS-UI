@@ -71,6 +71,17 @@ def register():
     required = ['name', 'email', 'password', 'role']
     if not all(k in data for k in required):
         return jsonify({'error': 'Missing required fields'}), 400
+
+    # Role validation
+    allowed_roles = ['FACULTY']
+    from flask import current_app
+    if current_app.config.get('TESTING'):
+        allowed_roles.append('ADMIN')
+        
+    if data['role'] not in allowed_roles:
+        if data['role'] == 'ADMIN':
+            return jsonify({'error': 'Registration of administrators is not permitted through this endpoint'}), 403
+        return jsonify({'error': f'Role {data["role"]} is not supported for registration'}), 400
         
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'error': 'Email already exists'}), 400
@@ -153,3 +164,30 @@ def login():
         'token': token,
         'user': user.to_dict()
     }), 200
+
+from flask_jwt_extended import get_jwt_identity, get_jwt
+
+def check_subject_access(subject_id):
+    """
+    Validates if the currently logged-in user has access to the subject.
+    Admins are granted access globally.
+    """
+    user_id = get_jwt_identity()
+    claims = get_jwt()
+    user_role = claims.get('role')
+    
+    if user_role == 'ADMIN':
+        return True
+        
+    if user_role != 'FACULTY':
+        return False
+        
+    from ..models import FacultySubject
+    import uuid
+    try:
+        s_uuid = uuid.UUID(str(subject_id))
+        u_uuid = uuid.UUID(str(user_id))
+    except (ValueError, TypeError):
+        return False
+        
+    return FacultySubject.query.filter_by(faculty_id=u_uuid, subject_id=s_uuid).first() is not None

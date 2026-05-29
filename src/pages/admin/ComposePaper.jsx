@@ -1,18 +1,22 @@
 // src/pages/admin/ComposePaper.jsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
     Box, Typography, Button, Paper, TextField, Divider,
     List, ListItem, ListItemText, IconButton, Grid, CircularProgress, Alert,
-    Chip, Dialog, DialogTitle, DialogContent, DialogActions
+    Chip, Dialog, DialogTitle, DialogContent, DialogActions, LinearProgress, Tooltip
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import AddIcon from '@mui/icons-material/Add';
 import PrintIcon from '@mui/icons-material/Print';
+import DescriptionIcon from '@mui/icons-material/Description';
+import CodeIcon from '@mui/icons-material/Code';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import api from '../../services/api';
 import { MathJax, MathJaxContext } from "better-react-mathjax";
 
@@ -42,6 +46,7 @@ export default function ComposePaper() {
     const [openReplaceModal, setOpenReplaceModal] = useState({ open: false, targetSectionId: null, oldQuestionId: null });
     const [bankQuestions, setBankQuestions] = useState([]);
     const [validationResult, setValidationResult] = useState(null);
+    const [subjectCOs, setSubjectCOs] = useState([]);
     
     useEffect(() => {
         if (!paperId || sections.length === 0) {
@@ -70,6 +75,14 @@ export default function ComposePaper() {
         fetchPaperDetails();
         fetchSubjectDetails();
     }, [paperId]);
+
+    // Fetch course outcomes for CO coverage panel
+    useEffect(() => {
+        if (!subjectId) return;
+        api.get(`/api/subjects/${subjectId}/course-outcomes`)
+            .then(res => setSubjectCOs(res.data))
+            .catch(() => setSubjectCOs([]));
+    }, [subjectId]);
 
     const fetchPaperDetails = async () => {
         try {
@@ -288,14 +301,226 @@ export default function ComposePaper() {
         documentTitle: paperTitle || 'Question Paper',
     });
 
+    const handleExportDocx = async () => {
+        try {
+            const res = await api.get(`/api/papers/${paperId}/export/docx`, {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            const filename = `Exam_Paper_${paperTitle.replace(/\s+/g, '_')}.docx`;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Export Word failed:", err);
+            alert("Failed to export Word document");
+        }
+    };
+
+    const handleExportLatex = async () => {
+        try {
+            const res = await api.get(`/api/papers/${paperId}/export/latex`, {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            const filename = `Exam_Paper_${paperTitle.replace(/\s+/g, '_')}.tex`;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Export LaTeX failed:", err);
+            alert("Failed to export LaTeX document");
+        }
+    };
+
+    // ============ Blueprint Dashboard Data ============
+    const blueprint = useMemo(() => {
+        const allQuestions = [];
+        sections.forEach(s => s.questions?.forEach(q => allQuestions.push(q)));
+        const totalQ = allQuestions.length;
+        let currentMarks = 0;
+        let easyCount = 0, mediumCount = 0, hardCount = 0;
+        let hasLow = false, hasMid = false, hasHigh = false;
+        const coveredCOs = new Set();
+
+        allQuestions.forEach(q => {
+            // Marks
+            const m = parseFloat(q.editorData?.marks || 0);
+            if (!isNaN(m)) currentMarks += m;
+            // Difficulty
+            const diff = (q.difficulty || 'MEDIUM').toUpperCase();
+            if (diff === 'EASY') easyCount++;
+            else if (diff === 'MEDIUM') mediumCount++;
+            else if (diff === 'HARD') hardCount++;
+            // Bloom
+            const bloom = (q.bloomLevel || 'understand').toLowerCase();
+            if (['remember', 'understand'].includes(bloom)) hasLow = true;
+            if (['apply', 'analyze'].includes(bloom)) hasMid = true;
+            if (['evaluate', 'create'].includes(bloom)) hasHigh = true;
+            // CO
+            if (q.coCode) coveredCOs.add(q.coCode);
+        });
+
+        const requiredMarks = parseFloat(maxMarks) || 0;
+        const marksPercent = requiredMarks > 0 ? Math.min(100, (currentMarks / requiredMarks) * 100) : 0;
+
+        return {
+            totalQ, currentMarks, requiredMarks, marksPercent,
+            easyCount, mediumCount, hardCount,
+            hasLow, hasMid, hasHigh,
+            coveredCOs: Array.from(coveredCOs)
+        };
+    }, [sections, maxMarks]);
+
     if (loading) return <Box p={4} display="flex" justifyContent="center"><CircularProgress /></Box>;
     if (!paperData) return <Box p={4}><Alert severity="error">Failed to load Paper structure.</Alert><Button onClick={() => navigate(-1)}>Go Back</Button></Box>;
 
     const usedIds = getUsedQuestionIds();
 
+    // Blueprint Sidebar Component
+    const BlueprintSidebar = () => {
+        const marksOk = blueprint.currentMarks === blueprint.requiredMarks;
+        const bloomAllOk = blueprint.hasLow && blueprint.hasMid && blueprint.hasHigh;
+        const totalQ = blueprint.totalQ;
+        const easyPct = totalQ > 0 ? ((blueprint.easyCount / totalQ) * 100).toFixed(0) : 0;
+        const medPct = totalQ > 0 ? ((blueprint.mediumCount / totalQ) * 100).toFixed(0) : 0;
+        const hardPct = totalQ > 0 ? ((blueprint.hardCount / totalQ) * 100).toFixed(0) : 0;
+
+        return (
+            <Paper elevation={4} sx={{
+                p: 2.5, width: '280px', position: 'sticky', top: 24, alignSelf: 'flex-start',
+                borderRadius: 3, background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                color: '#e0e0e0', '@media print': { display: 'none' },
+                boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+            }}>
+                {/* Title */}
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: '#fff', letterSpacing: 1, textTransform: 'uppercase', fontSize: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.1)', pb: 1 }}>
+                    📊 Blueprint Dashboard
+                </Typography>
+
+                {/* Marks Gauge */}
+                <Box sx={{ mb: 2.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                        <Typography variant="caption" sx={{ color: '#aaa' }}>Total Marks</Typography>
+                        <Typography variant="caption" sx={{ color: marksOk ? '#66bb6a' : '#ef5350', fontWeight: 700 }}>
+                            {blueprint.currentMarks} / {blueprint.requiredMarks}
+                        </Typography>
+                    </Box>
+                    <LinearProgress
+                        variant="determinate"
+                        value={blueprint.marksPercent}
+                        sx={{
+                            height: 10, borderRadius: 5,
+                            bgcolor: 'rgba(255,255,255,0.08)',
+                            '& .MuiLinearProgress-bar': {
+                                borderRadius: 5,
+                                background: marksOk
+                                    ? 'linear-gradient(90deg, #43a047, #66bb6a)'
+                                    : blueprint.marksPercent > 100
+                                        ? 'linear-gradient(90deg, #e53935, #ff5252)'
+                                        : 'linear-gradient(90deg, #ff9800, #ffb74d)'
+                            }
+                        }}
+                    />
+                    {marksOk && <Typography variant="caption" sx={{ color: '#66bb6a', mt: 0.3, display: 'block' }}>✓ Marks matched</Typography>}
+                </Box>
+
+                {/* Difficulty Distribution */}
+                <Box sx={{ mb: 2.5 }}>
+                    <Typography variant="caption" sx={{ color: '#aaa', mb: 0.5, display: 'block' }}>Difficulty Distribution ({totalQ} Qs)</Typography>
+                    {totalQ > 0 ? (
+                        <>
+                            <Box sx={{ display: 'flex', borderRadius: 5, overflow: 'hidden', height: 14 }}>
+                                <Tooltip title={`Easy: ${blueprint.easyCount} (${easyPct}%)`}>
+                                    <Box sx={{ width: `${easyPct}%`, bgcolor: '#66bb6a', transition: 'width 0.4s ease' }} />
+                                </Tooltip>
+                                <Tooltip title={`Medium: ${blueprint.mediumCount} (${medPct}%)`}>
+                                    <Box sx={{ width: `${medPct}%`, bgcolor: '#ffa726', transition: 'width 0.4s ease' }} />
+                                </Tooltip>
+                                <Tooltip title={`Hard: ${blueprint.hardCount} (${hardPct}%)`}>
+                                    <Box sx={{ width: `${hardPct}%`, bgcolor: '#ef5350', transition: 'width 0.4s ease' }} />
+                                </Tooltip>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                                <Typography variant="caption" sx={{ color: '#66bb6a', fontSize: '0.65rem' }}>● Easy {easyPct}%</Typography>
+                                <Typography variant="caption" sx={{ color: '#ffa726', fontSize: '0.65rem' }}>● Med {medPct}%</Typography>
+                                <Typography variant="caption" sx={{ color: '#ef5350', fontSize: '0.65rem' }}>● Hard {hardPct}%</Typography>
+                            </Box>
+                        </>
+                    ) : (
+                        <Typography variant="caption" sx={{ color: '#555' }}>No questions yet</Typography>
+                    )}
+                </Box>
+
+                {/* Bloom's Taxonomy */}
+                <Box sx={{ mb: 2.5 }}>
+                    <Typography variant="caption" sx={{ color: '#aaa', mb: 0.5, display: 'block' }}>Bloom's Coverage</Typography>
+                    {[{ label: 'Low (Remember/Understand)', ok: blueprint.hasLow },
+                      { label: 'Mid (Apply/Analyze)', ok: blueprint.hasMid },
+                      { label: 'High (Evaluate/Create)', ok: blueprint.hasHigh }].map(item => (
+                        <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', mb: 0.3 }}>
+                            {item.ok
+                                ? <CheckCircleIcon sx={{ fontSize: 16, color: '#66bb6a', mr: 0.5 }} />
+                                : <CancelIcon sx={{ fontSize: 16, color: '#ef5350', mr: 0.5 }} />}
+                            <Typography variant="caption" sx={{ color: item.ok ? '#c8e6c9' : '#ef9a9a' }}>{item.label}</Typography>
+                        </Box>
+                    ))}
+                    {bloomAllOk && <Typography variant="caption" sx={{ color: '#66bb6a', mt: 0.3, display: 'block' }}>✓ All levels covered</Typography>}
+                </Box>
+
+                {/* CO Coverage */}
+                {subjectCOs.length > 0 && (
+                    <Box>
+                        <Typography variant="caption" sx={{ color: '#aaa', mb: 0.5, display: 'block' }}>CO Coverage ({blueprint.coveredCOs.length}/{subjectCOs.length})</Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {subjectCOs.map(co => {
+                                const covered = blueprint.coveredCOs.includes(co.coCode);
+                                return (
+                                    <Tooltip key={co.id} title={co.description}>
+                                        <Chip
+                                            label={co.coCode}
+                                            size="small"
+                                            sx={{
+                                                fontSize: '0.65rem', fontWeight: 600, height: 22,
+                                                bgcolor: covered ? 'rgba(102,187,106,0.2)' : 'rgba(255,255,255,0.05)',
+                                                color: covered ? '#66bb6a' : '#777',
+                                                border: `1px solid ${covered ? '#66bb6a' : '#444'}`,
+                                            }}
+                                        />
+                                    </Tooltip>
+                                );
+                            })}
+                        </Box>
+                        {blueprint.coveredCOs.length === subjectCOs.length && subjectCOs.length > 0 && (
+                            <Typography variant="caption" sx={{ color: '#66bb6a', mt: 0.5, display: 'block' }}>✓ All COs covered</Typography>
+                        )}
+                    </Box>
+                )}
+
+                {/* Validation Errors */}
+                {validationResult && !validationResult.valid && validationResult.errors?.length > 0 && (
+                    <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                        <Typography variant="caption" sx={{ color: '#ef5350', fontWeight: 700, display: 'block', mb: 0.5 }}>⚠ Validation Issues</Typography>
+                        {validationResult.errors.map((e, i) => (
+                            <Typography key={i} variant="caption" sx={{ color: '#ef9a9a', display: 'block', fontSize: '0.65rem' }}>• {e}</Typography>
+                        ))}
+                    </Box>
+                )}
+            </Paper>
+        );
+    };
+
     return (
         <Box sx={{ p: 4, bgcolor: '#f5f5f5', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '210mm', mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: 1200, mb: 2, flexWrap: 'wrap', gap: 1 }}>
                 <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                     Paper Composer
                     {isFinalized ? (
@@ -304,11 +529,14 @@ export default function ComposePaper() {
                         <Chip label="DRAFT" color="warning" sx={{ ml: 2, fontWeight: 'bold' }} />
                     )}
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button variant="contained" startIcon={<PrintIcon />} onClick={handlePrint}>Print PDF</Button>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Button variant="contained" size="small" startIcon={<PrintIcon />} onClick={handlePrint}>Print PDF</Button>
+                    <Button variant="contained" size="small" color="secondary" startIcon={<DescriptionIcon />} onClick={handleExportDocx}>Export Word</Button>
+                    <Button variant="contained" size="small" sx={{ bgcolor: '#2e7d32', '&:hover': { bgcolor: '#1b5e20' } }} startIcon={<CodeIcon />} onClick={handleExportLatex}>Export LaTeX</Button>
                     {!isFinalized && (
                         <Button 
                             variant="contained" 
+                            size="small"
                             color="success" 
                             onClick={handleFinalize} 
                             disabled={finalizing || (validationResult && !validationResult.valid)}
@@ -316,51 +544,18 @@ export default function ComposePaper() {
                             {finalizing ? 'Finalizing...' : 'Finalize Paper'}
                         </Button>
                     )}
-                    <Button onClick={() => navigate(-1)}>Back</Button>
+                    <Button size="small" onClick={() => navigate(-1)}>Back</Button>
                 </Box>
             </Box>
 
-            {/* Validation Panel */}
-            {!isFinalized && validationResult && validationResult.details && (
-                <Paper sx={{ p: 2, mb: 3, width: '100%', maxWidth: '210mm', bgcolor: validationResult.valid ? '#e8f5e9' : '#ffebee' }}>
-                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>📊 Question Paper Status</Typography>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                            <Typography variant="body2">
-                                {validationResult.details.current_total_marks === validationResult.details.required_total_marks ? '✔' : '❌'} Total Marks: {validationResult.details.current_total_marks}/{validationResult.details.required_total_marks}
-                            </Typography>
-                            <Typography variant="body2">
-                                {validationResult.details.easy_count >= validationResult.details.min_easy ? '✔' : '❌'} Easy Questions: {validationResult.details.easy_count} (Need {validationResult.details.min_easy})
-                            </Typography>
-                            <Typography variant="body2">
-                                {validationResult.details.medium_count >= validationResult.details.min_medium ? '✔' : '❌'} Medium Questions: {validationResult.details.medium_count} (Need {validationResult.details.min_medium})
-                            </Typography>
-                            <Typography variant="body2">
-                                {validationResult.details.hard_count >= validationResult.details.min_hard ? '✔' : '❌'} Hard Questions: {validationResult.details.hard_count} (Need {validationResult.details.min_hard})
-                            </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <Typography variant="body2">
-                                {validationResult.details.has_low_bloom && validationResult.details.has_medium_bloom && validationResult.details.has_high_bloom ? '✔' : '❌'} Bloom Coverage: 
-                                {validationResult.details.has_low_bloom && validationResult.details.has_medium_bloom && validationResult.details.has_high_bloom ? ' OK' : ' Missing Levels'}
-                            </Typography>
-                            {!validationResult.valid && validationResult.errors.length > 0 && (
-                                <Box sx={{ mt: 1 }}>
-                                    {validationResult.errors.map((e, i) => (
-                                        <Typography key={i} variant="caption" color="error" display="block">• {e}</Typography>
-                                    ))}
-                                </Box>
-                            )}
-                        </Grid>
-                    </Grid>
-                </Paper>
-            )}
+            {/* Two-column layout: Paper + Blueprint Sidebar */}
+            <Box sx={{ display: 'flex', gap: 3, width: '100%', maxWidth: 1200, justifyContent: 'center', alignItems: 'flex-start' }}>
 
             <Box
                 ref={componentRef}
                 sx={{
                     p: 5, width: '210mm', minHeight: '297mm', bgcolor: 'white',
-                    boxShadow: 3, color: 'black',
+                    boxShadow: 3, color: 'black', flexShrink: 0,
                     '@media print': { boxShadow: 'none', margin: 0, p: 0 }
                 }}
             >
@@ -503,6 +698,12 @@ export default function ComposePaper() {
                         </Button>
                     </Box>
                 )}
+            </Box>
+
+                {/* Blueprint Sidebar */}
+                <Box sx={{ display: { xs: 'none', lg: 'block' }, flexShrink: 0 }}>
+                    <BlueprintSidebar />
+                </Box>
             </Box>
 
             {/* Repurposed Modal for Add / Replace with unified state rendering */}

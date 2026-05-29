@@ -8,7 +8,7 @@ import List from "@editorjs/list";
 import Table from "@editorjs/table";
 import ImageTool from "@editorjs/image";
 import api from "../../services/api";
-import { Box, Button, Typography, Alert, CircularProgress, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { Box, Button, Typography, Alert, CircularProgress, Select, MenuItem, InputLabel, FormControl, Snackbar } from '@mui/material';
 
 // --- Reusing MathTool Class ---
 class MathTool {
@@ -90,6 +90,13 @@ export default function EditQuestion() {
     // Data loaded from backend
     const [initialData, setInitialData] = useState(null);
 
+    // --- Auto-save draft state ---
+    const debounceTimerRef = useRef(null);
+    const [showDraftBanner, setShowDraftBanner] = useState(false);
+    const [draftData, setDraftData] = useState(null);
+    const [draftSavedOpen, setDraftSavedOpen] = useState(false);
+    const DRAFT_KEY = `qpds_draft_edit_${questionId}`;
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -130,6 +137,73 @@ export default function EditQuestion() {
         if (questionId) fetchData();
     }, [questionId]);
 
+    // --- Check for existing draft on mount ---
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                setDraftData(parsed);
+                setShowDraftBanner(true);
+            }
+        } catch (e) {
+            console.warn('Failed to parse edit draft:', e);
+            localStorage.removeItem(DRAFT_KEY);
+        }
+    }, [DRAFT_KEY]);
+
+    // --- Restore / Discard handlers ---
+    const handleRestoreDraft = () => {
+        if (!draftData) return;
+        if (draftData.selectedCO) setSelectedCO(draftData.selectedCO);
+
+        // Re-render editor with saved blocks
+        if (draftData.editorContent && editorInstanceRef.current) {
+            const inst = editorInstanceRef.current;
+            if (inst.isReady) {
+                inst.isReady.then(() => {
+                    inst.render(draftData.editorContent).catch(err =>
+                        console.warn('Failed to restore editor content:', err)
+                    );
+                });
+            }
+        }
+        setShowDraftBanner(false);
+    };
+
+    const handleDiscardDraft = () => {
+        localStorage.removeItem(DRAFT_KEY);
+        setDraftData(null);
+        setShowDraftBanner(false);
+    };
+
+    // --- Debounced auto-save helper ---
+    const triggerDebouncedSave = () => {
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = setTimeout(async () => {
+            try {
+                if (!editorInstanceRef.current) return;
+                const content = await editorInstanceRef.current.save();
+                const draft = {
+                    selectedCO,
+                    editorContent: content,
+                    savedAt: new Date().toISOString(),
+                };
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+                setDraftSavedOpen(true);
+            } catch (err) {
+                console.warn('Auto-save edit draft failed:', err);
+            }
+        }, 3000);
+    };
+
+    // Cleanup debounce timer on unmount
+    useEffect(() => {
+        return () => {
+            if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        };
+    }, []);
+
     useEffect(() => {
         if (!loading && initialData && !editorInstanceRef.current) {
             const editor = new EditorJS({
@@ -137,10 +211,14 @@ export default function EditQuestion() {
                 tools: tools,
                 data: initialData,
                 autofocus: true,
-                onReady: () => { editorInstanceRef.current = editor; }
+                onReady: () => { editorInstanceRef.current = editor; },
+                onChange: async () => {
+                    triggerDebouncedSave();
+                }
             });
 
             return () => {
+                if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
                 if (editorInstanceRef.current && typeof editorInstanceRef.current.destroy === 'function') {
                     editorInstanceRef.current.destroy().catch(e => console.warn(e));
                     editorInstanceRef.current = null;
@@ -160,6 +238,8 @@ export default function EditQuestion() {
             };
 
             await api.put(`/api/questions/${questionId}`, payload);
+            // Clear auto-save draft on successful update
+            localStorage.removeItem(DRAFT_KEY);
             alert("Question updated successfully!");
             navigate(-1); // Go back
         } catch (err) {
@@ -177,6 +257,26 @@ export default function EditQuestion() {
         <Box sx={{ p: 3, maxWidth: 1100, margin: 'auto' }}>
             <Typography variant="h4" gutterBottom>Edit Question</Typography>
             <Typography variant="subtitle1" gutterBottom color="textSecondary">{subjectName}</Typography>
+
+            {/* --- Draft Restore Banner --- */}
+            {showDraftBanner && (
+                <Alert
+                    severity="info"
+                    sx={{ mb: 2 }}
+                    action={
+                        <>
+                            <Button color="inherit" size="small" onClick={handleRestoreDraft}>
+                                Restore Draft
+                            </Button>
+                            <Button color="inherit" size="small" onClick={handleDiscardDraft}>
+                                Discard
+                            </Button>
+                        </>
+                    }
+                >
+                    We found an unsaved draft from your previous session.
+                </Alert>
+            )}
 
             <Box sx={{ my: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
                 <FormControl sx={{ minWidth: 200 }}>
@@ -200,8 +300,17 @@ export default function EditQuestion() {
                 <Button variant="contained" onClick={handleSave} disabled={saving}>
                     {saving ? "Saving..." : "Update Question"}
                 </Button>
-                <Button variant="outlined" onClick={() => navigate(-1)}>Cancel</Button>
+                <Button variant="outlined" onClick={() => { localStorage.removeItem(DRAFT_KEY); navigate(-1); }}>Cancel</Button>
             </Box>
+
+            {/* --- Draft Saved Snackbar --- */}
+            <Snackbar
+                open={draftSavedOpen}
+                autoHideDuration={2000}
+                onClose={() => setDraftSavedOpen(false)}
+                message="Draft saved"
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            />
         </Box>
     );
 }

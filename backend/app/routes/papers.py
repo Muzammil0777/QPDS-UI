@@ -25,6 +25,10 @@ def create_draft():
     
     if not subject_id or not title:
         return jsonify({'error': 'Missing subjectId or title'}), 400
+
+    from .auth import check_subject_access
+    if not check_subject_access(subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
         
     import uuid
     try:
@@ -77,6 +81,11 @@ def create_draft():
 def get_paper(paper_id):
     paper = get_paper_or_404(paper_id)
     if not paper: return jsonify({'error': 'Paper not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
     return jsonify(paper.to_dict()), 200
 
 # C. Create Section
@@ -85,6 +94,11 @@ def get_paper(paper_id):
 def create_section(paper_id):
     paper = get_paper_or_404(paper_id)
     if not paper: return jsonify({'error': 'Paper not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
     if paper.status == 'FINALIZED': return jsonify({'error': 'Paper is finalized'}), 400
 
     data = request.get_json()
@@ -109,6 +123,11 @@ def create_section(paper_id):
 def reorder_sections(paper_id):
     paper = get_paper_or_404(paper_id)
     if not paper: return jsonify({'error': 'Paper not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
     if paper.status == 'FINALIZED': return jsonify({'error': 'Paper is finalized'}), 400
     
     ordered_ids = request.json.get('orderedSectionIds', [])
@@ -128,6 +147,11 @@ def reorder_sections(paper_id):
 def move_question(paper_id):
     paper = get_paper_or_404(paper_id)
     if not paper: return jsonify({'error': 'Paper not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
     if paper.status == 'FINALIZED': return jsonify({'error': 'Paper is finalized'}), 400
 
     data = request.get_json()
@@ -172,6 +196,11 @@ def move_question(paper_id):
 def finalize_paper(paper_id):
     paper = get_paper_or_404(paper_id)
     if not paper: return jsonify({'error': 'Paper not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
     if paper.status == 'FINALIZED': return jsonify({'error': 'Already finalized'}), 400
     
     try:
@@ -224,6 +253,10 @@ def finalize_paper(paper_id):
 def validate_paper(paper_id):
     paper = get_paper_or_404(paper_id)
     if not paper: return jsonify({'error': 'Paper not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
     
     data = request.get_json() or {}
     total_marks = data.get('totalMarks', 100)
@@ -251,6 +284,12 @@ def validate_draft():
         except ValueError:
             pass
     questions = Question.query.filter(Question.id.in_(parsed_ids)).all()
+
+    from .auth import check_subject_access
+    for q in questions:
+        if not check_subject_access(q.subject_id):
+            return jsonify({'error': 'You do not have access to some questions in the draft'}), 403
+
     from ..services.validation_service import validate_question_paper
     result = validate_question_paper(questions, total_marks)
     return jsonify(result), 200
@@ -266,6 +305,10 @@ def auto_generate_paper():
     
     if not subject_id:
         return jsonify({'error': 'Subject ID required'}), 400
+
+    from .auth import check_subject_access
+    if not check_subject_access(subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
         
     import uuid
     try:
@@ -352,3 +395,56 @@ def auto_generate_paper():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@bp.route('/<paper_id>/export/docx', methods=['GET'])
+@jwt_required()
+def export_paper_docx(paper_id):
+    paper = get_paper_or_404(paper_id)
+    if not paper:
+        return jsonify({'error': 'Paper not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
+    try:
+        from ..services.export_service import generate_docx
+        from flask import send_file
+        
+        file_stream = generate_docx(paper)
+        
+        filename = f"Exam_Paper_{paper.title.replace(' ', '_')}.docx"
+        return send_file(
+            file_stream,
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/<paper_id>/export/latex', methods=['GET'])
+@jwt_required()
+def export_paper_latex(paper_id):
+    paper = get_paper_or_404(paper_id)
+    if not paper:
+        return jsonify({'error': 'Paper not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
+    try:
+        from ..services.export_service import generate_latex
+        from flask import send_file
+        
+        file_stream = generate_latex(paper)
+        
+        filename = f"Exam_Paper_{paper.title.replace(' ', '_')}.tex"
+        return send_file(
+            file_stream,
+            mimetype="application/x-latex",
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

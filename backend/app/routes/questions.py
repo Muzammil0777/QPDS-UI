@@ -163,14 +163,33 @@ def get_questions():
     from ..models import Paper, QuestionUsage, db
 
     # Allow filtering by subject_id
-    subject_id = request.args.get('subjectId')
+    subject_id_str = request.args.get('subjectId')
+    subject_id = None
+    if subject_id_str:
+        import uuid
+        try:
+            subject_id = uuid.UUID(str(subject_id_str))
+        except ValueError:
+            return jsonify({'error': 'Invalid subjectId format'}), 400
+
+    creator_id_str = request.args.get('creatorId')
+    creator_id = None
+    if creator_id_str:
+        import uuid
+        try:
+            creator_id = uuid.UUID(str(creator_id_str))
+        except ValueError:
+            return jsonify({'error': 'Invalid creatorId format'}), 400
+
     difficulty = request.args.get('difficulty')
     source = request.args.get('source')
-    creator_id = request.args.get('creatorId')
     include_used = request.args.get('includeUsed', 'false').lower() == 'true'
     semester = request.args.get('semester')
     academic_year = request.args.get('academicYear')
     subcode = request.args.get('subcode')
+    page = request.args.get('page', type=int)
+    limit = request.args.get('limit', type=int)
+    creator_name = request.args.get('creatorName')
     
     recently_used_ids_str = set()
     recently_used_ids_obj = set()
@@ -192,7 +211,33 @@ def get_questions():
         recently_used_ids_obj = {u.question_id for u in usages_query}
         recently_used_ids_str = {str(u.question_id) for u in usages_query}
 
+    from flask_jwt_extended import get_jwt
+    from .auth import check_subject_access
+
+    user_id = get_jwt_identity()
+    claims = get_jwt()
+    user_role = claims.get('role')
+
     query = Question.query
+
+    if user_role != 'ADMIN':
+        if subject_id:
+            if not check_subject_access(subject_id):
+                return jsonify({'error': 'You do not have access to this subject'}), 403
+        else:
+            from ..models import FacultySubject
+            import uuid
+            try:
+                u_uuid = uuid.UUID(str(user_id))
+            except ValueError:
+                return jsonify({'error': 'Invalid User ID format'}), 400
+            
+            assigned_subjects = FacultySubject.query.filter_by(faculty_id=u_uuid).all()
+            assigned_ids = [asub.subject_id for asub in assigned_subjects]
+            if not assigned_ids:
+                return jsonify([]), 200
+            query = query.filter(Question.subject_id.in_(assigned_ids))
+
     if subject_id:
         query = query.filter_by(subject_id=subject_id)
     if semester or academic_year or subcode:
@@ -210,19 +255,37 @@ def get_questions():
         query = query.filter_by(source=source)
     if creator_id:
         query = query.filter_by(creator_id=creator_id)
+    if creator_name:
+        from ..models import User
+        query = query.filter(Question.creator.has(User.name.ilike(f'%{creator_name}%')))
         
     if not include_used and recently_used_ids_obj:
         query = query.filter(Question.id.not_in(list(recently_used_ids_obj)))
         
-    questions = query.order_by(Question.created_at.desc()).all()
-    
-    results = []
-    for q in questions:
-        q_dict = q.to_dict()
-        q_dict['isRecentlyUsed'] = str(q.id) in recently_used_ids_str
-        results.append(q_dict)
+    if page and limit:
+        questions_paginated = query.order_by(Question.created_at.desc()).paginate(page=page, per_page=limit, error_out=False)
+        results = []
+        for q in questions_paginated.items:
+            q_dict = q.to_dict()
+            q_dict['isRecentlyUsed'] = str(q.id) in recently_used_ids_str
+            results.append(q_dict)
+            
+        return jsonify({
+            'questions': results,
+            'total': questions_paginated.total,
+            'page': page,
+            'pages': questions_paginated.pages
+        }), 200
+    else:
+        questions = query.order_by(Question.created_at.desc()).all()
         
-    return jsonify(results), 200
+        results = []
+        for q in questions:
+            q_dict = q.to_dict()
+            q_dict['isRecentlyUsed'] = str(q.id) in recently_used_ids_str
+            results.append(q_dict)
+            
+        return jsonify(results), 200
 
 @bp.route('/<question_id>', methods=['GET'])
 @jwt_required()
@@ -237,6 +300,11 @@ def get_single_question(question_id):
         question = Question.query.get(q_uuid)
         if not question:
             return jsonify({'error': 'Question not found'}), 404
+
+        from .auth import check_subject_access
+        if not check_subject_access(question.subject_id):
+            return jsonify({'error': 'You do not have access to this subject'}), 403
+
         return jsonify(question.to_dict()), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -246,6 +314,7 @@ def get_single_question(question_id):
 def delete_question(question_id):
     try:
         from ..models import db
+        from flask_jwt_extended import get_jwt
         import uuid
         try:
             q_uuid = uuid.UUID(str(question_id))
@@ -254,6 +323,13 @@ def delete_question(question_id):
         question = Question.query.get(q_uuid)
         if not question:
             return jsonify({'error': 'Question not found'}), 404
+
+        user_id = get_jwt_identity()
+        claims = get_jwt()
+        user_role = claims.get('role')
+
+        if user_role != 'ADMIN' and str(question.creator_id) != user_id:
+            return jsonify({'error': 'Only the creator of the question or an admin can delete it'}), 403
             
         db.session.delete(question)
         db.session.commit()
@@ -270,6 +346,7 @@ def update_question(question_id):
 
     try:
         from ..models import db
+        from flask_jwt_extended import get_jwt
         import uuid
         try:
             q_uuid = uuid.UUID(str(question_id))
@@ -278,6 +355,13 @@ def update_question(question_id):
         question = Question.query.get(q_uuid)
         if not question:
             return jsonify({'error': 'Question not found'}), 404
+
+        user_id = get_jwt_identity()
+        claims = get_jwt()
+        user_role = claims.get('role')
+
+        if user_role != 'ADMIN' and str(question.creator_id) != user_id:
+            return jsonify({'error': 'Only the creator of the question or an admin can update it'}), 403
             
         from ..services.bloom_service import extract_text_from_editor_data, classify_bloom_level, map_to_difficulty
 

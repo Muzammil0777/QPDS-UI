@@ -5,13 +5,23 @@ from ..models import db, Section, PaperQuestion, Question
 bp = Blueprint('sections', __name__, url_prefix='/api/sections')
 
 def get_section_or_404(section_id):
-    return Section.query.get(section_id)
+    import uuid
+    try:
+        s_uuid = uuid.UUID(str(section_id))
+    except ValueError:
+        return None
+    return Section.query.get(s_uuid)
 
 @bp.route('/<section_id>/add-question', methods=['POST'])
 @jwt_required()
 def add_question(section_id):
     section = get_section_or_404(section_id)
     if not section: return jsonify({'error': 'Section not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(section.paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
     if section.paper.status == 'FINALIZED': return jsonify({'error': 'Paper is finalized'}), 400
     
     question_id = request.json.get('questionId')
@@ -33,6 +43,11 @@ def add_question(section_id):
 def remove_question(section_id, question_id):
     section = get_section_or_404(section_id)
     if not section: return jsonify({'error': 'Section not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(section.paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
     if section.paper.status == 'FINALIZED': return jsonify({'error': 'Paper is finalized'}), 400
     
     pq = PaperQuestion.query.filter_by(section_id=section_id, question_id=question_id).first()
@@ -47,6 +62,11 @@ def remove_question(section_id, question_id):
 def replace_question(section_id):
     section = get_section_or_404(section_id)
     if not section: return jsonify({'error': 'Section not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(section.paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
     if section.paper.status == 'FINALIZED': return jsonify({'error': 'Paper is finalized'}), 400
     
     old_id = request.json.get('oldQuestionId')
@@ -68,6 +88,11 @@ def replace_question(section_id):
 def reorder_questions(section_id):
     section = get_section_or_404(section_id)
     if not section: return jsonify({'error': 'Section not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(section.paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
     if section.paper.status == 'FINALIZED': return jsonify({'error': 'Paper is finalized'}), 400
     
     ordered_ids = request.json.get('orderedQuestionIds', [])
@@ -86,6 +111,11 @@ def reorder_questions(section_id):
 def delete_section(section_id):
     section = get_section_or_404(section_id)
     if not section: return jsonify({'error': 'Section not found'}), 404
+
+    from .auth import check_subject_access
+    if not check_subject_access(section.paper.subject_id):
+        return jsonify({'error': 'You do not have access to this subject'}), 403
+
     if section.paper.status == 'FINALIZED': return jsonify({'error': 'Paper is finalized'}), 400
     
     # Must be empty

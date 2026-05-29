@@ -158,6 +158,7 @@ class Paper(db.Model):
     status = db.Column(db.String(20), nullable=False, default="DRAFT")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    subject = db.relationship('Subject', backref='papers')
     sections = db.relationship('Section', backref='paper', cascade='all, delete-orphan', order_by='Section.order_index', lazy=True)
     usages = db.relationship('QuestionUsage', backref='paper', cascade='all, delete-orphan', lazy=True)
 

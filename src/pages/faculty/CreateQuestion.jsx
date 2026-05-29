@@ -10,7 +10,7 @@ import ImageTool from "@editorjs/image";
 import { MathJax, MathJaxContext } from "better-react-mathjax";
 import api from "../../services/api";
 import "./createQuestion.css";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Alert, List as MuiList, ListItem, ListItemText } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Alert, List as MuiList, ListItem, ListItemText, Snackbar } from '@mui/material';
 
 /**
  * Helper: safely destroy EditorJS instance without assuming destroy() returns a Promise.
@@ -236,6 +236,8 @@ const tools = {
 /* --------------------
    Main component
    -------------------- */
+const DRAFT_KEY = 'qpds_draft_new_question';
+
 export default function CreateQuestion() {
   const editorInstanceRef = useRef(null);
   const [savedJson, setSavedJson] = useState(null);
@@ -251,6 +253,85 @@ export default function CreateQuestion() {
   const [checking, setChecking] = useState(false);
   const [simResult, setSimResult] = useState(null);
   const [openSimDialog, setOpenSimDialog] = useState(false);
+
+  // --- Auto-save draft state ---
+  const debounceTimerRef = useRef(null);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+  const [draftData, setDraftData] = useState(null);
+  const [draftSavedOpen, setDraftSavedOpen] = useState(false);
+
+  // --- Check for existing draft on mount ---
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setDraftData(parsed);
+        setShowDraftBanner(true);
+      }
+    } catch (e) {
+      console.warn('Failed to parse draft:', e);
+      localStorage.removeItem(DRAFT_KEY);
+    }
+  }, []);
+
+  // --- Restore / Discard handlers ---
+  const handleRestoreDraft = () => {
+    if (!draftData) return;
+    if (draftData.selectedSubject) setSelectedSubject(draftData.selectedSubject);
+    if (draftData.selectedCO) setSelectedCO(draftData.selectedCO);
+    if (draftData.marks !== undefined) setMarks(draftData.marks);
+    if (draftData.difficulty) setDifficulty(draftData.difficulty);
+
+    // Re-render editor with saved blocks
+    if (draftData.editorContent && editorInstanceRef.current) {
+      const inst = editorInstanceRef.current;
+      if (inst.isReady) {
+        inst.isReady.then(() => {
+          inst.render(draftData.editorContent).catch(err =>
+            console.warn('Failed to restore editor content:', err)
+          );
+        });
+      }
+    }
+    setShowDraftBanner(false);
+  };
+
+  const handleDiscardDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setDraftData(null);
+    setShowDraftBanner(false);
+  };
+
+  // --- Debounced auto-save helper ---
+  const triggerDebouncedSave = () => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(async () => {
+      try {
+        if (!editorInstanceRef.current) return;
+        const content = await editorInstanceRef.current.save();
+        const draft = {
+          selectedSubject,
+          selectedCO,
+          marks,
+          difficulty,
+          editorContent: content,
+          savedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        setDraftSavedOpen(true);
+      } catch (err) {
+        console.warn('Auto-save draft failed:', err);
+      }
+    }, 3000);
+  };
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     // Fetch assigned subjects
@@ -296,11 +377,13 @@ export default function CreateQuestion() {
         editorInstanceRef.current = editor;
       },
       onChange: async () => {
-        // Optional: Auto-save or debug logging
+        triggerDebouncedSave();
       }
     });
 
     return () => {
+      // Cleanup debounce timer
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       // Cleanup function safely destroying synchronously catching React suspense crashes
       if (editorInstanceRef.current) {
         safeDestroyEditorInstance(editorInstanceRef.current);
@@ -356,6 +439,8 @@ export default function CreateQuestion() {
       const response = await api.post("/api/questions", payload);
 
       setSavedJson(response.data);
+      // Clear auto-save draft on successful save
+      localStorage.removeItem(DRAFT_KEY);
       alert("Question saved successfully to database!");
     } catch (err) {
       console.error("Save error:", err);
@@ -381,6 +466,8 @@ export default function CreateQuestion() {
         return;
       }
       setSavedJson(null);
+      // Clear auto-save draft on clear
+      localStorage.removeItem(DRAFT_KEY);
     } catch (e) {
       console.warn("Clear failed, reloading:", e);
       safeDestroyEditorInstance(inst);
@@ -427,6 +514,26 @@ export default function CreateQuestion() {
   return (
     <div style={{ padding: 20, maxWidth: 1100, margin: "auto" }}>
       <h1>Create Question</h1>
+
+      {/* --- Draft Restore Banner --- */}
+      {showDraftBanner && (
+        <Alert
+          severity="info"
+          sx={{ mb: 2 }}
+          action={
+            <>
+              <Button color="inherit" size="small" onClick={handleRestoreDraft}>
+                Restore Draft
+              </Button>
+              <Button color="inherit" size="small" onClick={handleDiscardDraft}>
+                Discard
+              </Button>
+            </>
+          }
+        >
+          We found an unsaved draft from your previous session.
+        </Alert>
+      )}
 
       <div
         style={{
@@ -507,6 +614,15 @@ export default function CreateQuestion() {
           Clear
         </button>
       </div>
+
+      {/* --- Draft Saved Snackbar --- */}
+      <Snackbar
+        open={draftSavedOpen}
+        autoHideDuration={2000}
+        onClose={() => setDraftSavedOpen(false)}
+        message="Draft saved"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      />
 
       <Dialog open={openSimDialog} onClose={() => setOpenSimDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Similarity Check Result</DialogTitle>
