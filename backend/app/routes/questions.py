@@ -270,7 +270,7 @@ def get_questions():
         query = query.filter(Question.creator.has(User.name.ilike(f'%{creator_name}%')))
         
     if not include_used and recently_used_ids_obj:
-        query = query.filter(Question.id.not_in(list(recently_used_ids_obj)))
+        query = query.filter(Question.id.notin_(list(recently_used_ids_obj)))
         
     if page and limit:
         questions_paginated = query.order_by(Question.created_at.desc()).paginate(page=page, per_page=limit, error_out=False)
