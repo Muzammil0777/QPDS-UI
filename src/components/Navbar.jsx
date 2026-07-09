@@ -50,7 +50,7 @@ export default function Navbar() {
                         fontSize: '1.25rem'
                     }}
                 >
-                    QPDS
+                    Acadence
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                     {['SUPER_ADMIN', 'ADMIN'].includes(role) && (
