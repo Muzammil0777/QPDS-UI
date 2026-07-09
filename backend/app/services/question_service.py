@@ -101,8 +101,8 @@ def create_question(data, user_id):
              raise ValueError(f"Subject {sub_code} not found for this Semester/Year")
 
     # 4. Check Assignment
-    assignment = FacultySubject.query.filter_by(faculty_id=user.id, subject_id=subject.id).first()
-    if not assignment and user.role != 'ADMIN': # Admin checks? Requirement says Faculty Logic.
+    from ..services.rbac_service import has_subject_permission
+    if not has_subject_permission(user.id, subject.id, ['FACULTY', 'SUBJECT_EXPERT']) and user.role not in ['SUPER_ADMIN', 'ADMIN']:
         raise PermissionError(f"Subject {sub_code} is not assigned to you")
 
     # 5. Check Course Outcome
@@ -146,7 +146,8 @@ def create_question(data, user_id):
         source="MANUAL",
         difficulty=computed_difficulty,
         bloom_level=computed_bloom_level,
-        editor_data=editor_data
+        editor_data=editor_data,
+        status="DRAFT"
     )
     db.session.add(question)
     db.session.commit()

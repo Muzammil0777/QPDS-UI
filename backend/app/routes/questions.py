@@ -220,20 +220,32 @@ def get_questions():
 
     query = Question.query
 
-    if user_role != 'ADMIN':
+    if user_role not in ['SUPER_ADMIN', 'ADMIN']:
         if subject_id:
             if not check_subject_access(subject_id):
                 return jsonify({'error': 'You do not have access to this subject'}), 403
         else:
-            from ..models import FacultySubject
+            from ..models import FacultyAssignment
             import uuid
             try:
                 u_uuid = uuid.UUID(str(user_id))
             except ValueError:
                 return jsonify({'error': 'Invalid User ID format'}), 400
             
-            assigned_subjects = FacultySubject.query.filter_by(faculty_id=u_uuid).all()
-            assigned_ids = [asub.subject_id for asub in assigned_subjects]
+            from datetime import datetime
+            now = datetime.utcnow()
+            assigned_subjects = FacultyAssignment.query.filter(
+                FacultyAssignment.user_id == u_uuid,
+                FacultyAssignment.is_active == True,
+                FacultyAssignment.valid_from <= now,
+                FacultyAssignment.valid_until >= now
+            ).all()
+            assigned_ids = [asub.subject_id for asub in assigned_subjects if asub.subject_id]
+            # Fallback to FacultySubject
+            from ..models import FacultySubject
+            legacy_subs = FacultySubject.query.filter_by(faculty_id=u_uuid).all()
+            assigned_ids.extend([lsub.subject_id for lsub in legacy_subs if lsub.subject_id])
+            
             if not assigned_ids:
                 return jsonify([]), 200
             query = query.filter(Question.subject_id.in_(assigned_ids))
@@ -328,7 +340,7 @@ def delete_question(question_id):
         claims = get_jwt()
         user_role = claims.get('role')
 
-        if user_role != 'ADMIN' and str(question.creator_id) != user_id:
+        if user_role not in ['SUPER_ADMIN', 'ADMIN'] and str(question.creator_id) != user_id:
             return jsonify({'error': 'Only the creator of the question or an admin can delete it'}), 403
             
         db.session.delete(question)
@@ -360,8 +372,13 @@ def update_question(question_id):
         claims = get_jwt()
         user_role = claims.get('role')
 
-        if user_role != 'ADMIN' and str(question.creator_id) != user_id:
-            return jsonify({'error': 'Only the creator of the question or an admin can update it'}), 403
+        from ..services.rbac_service import has_subject_permission
+        is_owner = str(question.creator_id) == user_id
+        is_admin = user_role in ['SUPER_ADMIN', 'ADMIN']
+        is_expert = has_subject_permission(user_id, question.subject_id, ['SUBJECT_EXPERT'])
+
+        if not is_admin and not is_owner and not is_expert:
+            return jsonify({'error': 'Only the creator of the question, an assigned Subject Expert, or an admin can update it'}), 403
             
         from ..services.bloom_service import extract_text_from_editor_data, classify_bloom_level, map_to_difficulty
 
@@ -399,6 +416,36 @@ def update_question(question_id):
             else:
                 co_uuid = None
             question.course_outcome_id = co_uuid
+
+        # Update status and review step tracking
+        if 'status' in data:
+            new_status = data['status']
+            # Allow status update by authorized users
+            allowed_statuses = ['DRAFT', 'PENDING_REVIEW', 'APPROVED', 'REVISION_NEEDED']
+            if new_status not in allowed_statuses:
+                return jsonify({'error': f'Invalid status: {new_status}'}), 400
+            
+            question.status = new_status
+            
+            # Log audit trail if status is reviewed
+            if new_status in ['APPROVED', 'REVISION_NEEDED']:
+                question.reviewed_by = uuid.UUID(user_id)
+                if 'reviewComments' in data:
+                    question.review_comments = data['reviewComments']
+                
+                from ..models import QuestionReviewStep
+                from datetime import datetime
+                review_step = QuestionReviewStep(
+                    question_id=question.id,
+                    stage_name='SUBJECT_EXPERT',
+                    reviewer_id=uuid.UUID(user_id),
+                    status=new_status,
+                    comments=data.get('reviewComments', ''),
+                    reviewed_at=datetime.utcnow()
+                )
+                db.session.add(review_step)
+        elif 'reviewComments' in data:
+            question.review_comments = data['reviewComments']
             
         db.session.commit()
         return jsonify({'message': 'Question updated successfully', 'question': question.to_dict()}), 200

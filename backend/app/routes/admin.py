@@ -1,15 +1,15 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity, verify_jwt_in_request
 import uuid
-from ..models import User, FacultySubject, CourseOutcome, Subject, db
+from datetime import datetime, timedelta
+from ..models import User, FacultyAssignment, CourseOutcome, Subject, db
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 def admin_required():
     claims = get_jwt()
-    if claims.get('role') != 'ADMIN':
-        return False
-    return True
+    # Permit ADMIN and SUPER_ADMIN for administrative requests
+    return claims.get('role') in ['SUPER_ADMIN', 'ADMIN']
 
 @bp.before_request
 def check_admin():
@@ -26,21 +26,21 @@ def check_admin():
     if not admin_required():
          return jsonify({'error': 'Admin privilege required'}), 403
 
-
 @bp.route('/faculty', methods=['GET'])
 def get_faculty():
-    # List all users with role FACULTY
-    all_users = User.query.all()
-    print(f"DEBUG: All users: {len(all_users)} -> {[u.role for u in all_users]}")
-    
-    faculty_list = User.query.filter_by(role='FACULTY').all()
-    print(f"DEBUG: Faculty found: {len(faculty_list)}")
+    # List all users with system role ACADEMIC or FACULTY
+    faculty_list = User.query.filter(User.role.in_(['ACADEMIC', 'FACULTY'])).all()
     
     result = []
     for f in faculty_list:
         data = f.to_dict()
-        # Fetch subjects
-        assigned = db.session.query(Subject).join(FacultySubject).filter(FacultySubject.faculty_id == f.id).all()
+        # Fetch dynamic subject assignments
+        assigned = db.session.query(Subject).join(FacultyAssignment).filter(
+            FacultyAssignment.user_id == f.id,
+            FacultyAssignment.is_active == True,
+            FacultyAssignment.valid_from <= datetime.utcnow(),
+            FacultyAssignment.valid_until >= datetime.utcnow()
+        ).all()
         # Format: "Code - Name"
         data['subjects'] = [f"{s.code} - {s.name}" for s in assigned]
         result.append(data)
@@ -50,8 +50,8 @@ def get_faculty():
 @bp.route('/approve/<uuid:faculty_id>', methods=['POST'])
 def approve_faculty(faculty_id):
     user = User.query.get_or_404(faculty_id)
-    if user.role != 'FACULTY':
-        return jsonify({'error': 'User is not faculty'}), 400
+    if user.role not in ['ACADEMIC', 'FACULTY']:
+        return jsonify({'error': 'User is not an academic profile'}), 400
         
     user.is_approved = True
     db.session.commit()
@@ -61,8 +61,8 @@ def approve_faculty(faculty_id):
 def deny_faculty(faculty_id):
     # Deny request = Delete the user account
     user = User.query.get_or_404(faculty_id)
-    if user.role != 'FACULTY':
-         return jsonify({'error': 'User is not faculty'}), 400
+    if user.role not in ['ACADEMIC', 'FACULTY']:
+         return jsonify({'error': 'User is not an academic profile'}), 400
     
     db.session.delete(user)
     db.session.commit()
@@ -77,6 +77,11 @@ def update_faculty(faculty_id):
         user.name = data['name']
     if 'designation' in data:
         user.designation = data['designation']
+    if 'role' in data:
+        # Super Admin / Admin can elevate roles
+        new_role = data['role']
+        if new_role in ['SUPER_ADMIN', 'ADMIN', 'ACADEMIC']:
+            user.role = new_role
     
     db.session.commit()
     return jsonify({'message': 'Faculty details updated'}), 200
@@ -84,8 +89,8 @@ def update_faculty(faculty_id):
 @bp.route('/deactivate-user/<uuid:faculty_id>', methods=['PUT'])
 def deactivate_faculty(faculty_id):
     user = User.query.get_or_404(faculty_id)
-    if user.role != 'FACULTY':
-        return jsonify({'error': 'User is not faculty'}), 400
+    if user.role not in ['ACADEMIC', 'FACULTY']:
+        return jsonify({'error': 'User is not an academic profile'}), 400
         
     user.is_active = False
     db.session.commit()
@@ -94,8 +99,8 @@ def deactivate_faculty(faculty_id):
 @bp.route('/reactivate-user/<uuid:faculty_id>', methods=['PUT'])
 def reactivate_faculty(faculty_id):
     user = User.query.get_or_404(faculty_id)
-    if user.role != 'FACULTY':
-        return jsonify({'error': 'User is not faculty'}), 400
+    if user.role not in ['ACADEMIC', 'FACULTY']:
+        return jsonify({'error': 'User is not an academic profile'}), 400
         
     user.is_active = True
     db.session.commit()
@@ -107,7 +112,6 @@ def assign_subject():
     if not data or 'facultyId' not in data or 'subjectId' not in data:
         return jsonify({'error': 'Missing facultyId or subjectId'}), 400
         
-    # Check existence
     try:
         f_uuid = uuid.UUID(data['facultyId'])
         s_uuid = uuid.UUID(data['subjectId'])
@@ -120,23 +124,33 @@ def assign_subject():
     if not faculty or not subject:
         return jsonify({'error': 'Faculty or Subject not found'}), 404
         
-    if faculty.role != 'FACULTY':
-        return jsonify({'error': 'User is not legitimate faculty'}), 400
+    if faculty.role not in ['ACADEMIC', 'FACULTY']:
+        return jsonify({'error': 'User is not legitimate academic member'}), 400
         
     if hasattr(faculty, 'is_active') and not faculty.is_active:
-        return jsonify({'error': 'Cannot assign subject to deactivated faculty'}), 400
+        return jsonify({'error': 'Cannot assign subject to deactivated academic member'}), 400
         
     # Check previous assignment
-    exists = FacultySubject.query.filter_by(faculty_id=faculty.id, subject_id=subject.id).first()
+    exists = FacultyAssignment.query.filter_by(
+        user_id=faculty.id,
+        subject_id=subject.id,
+        role_type='FACULTY'
+    ).first()
+    
     if exists:
         return jsonify({'message': 'Already assigned'}), 200
         
     admin_id = get_jwt_identity()
+    now = datetime.utcnow()
     
-    assignment = FacultySubject(
-        faculty_id=faculty.id,
+    assignment = FacultyAssignment(
+        user_id=faculty.id,
         subject_id=subject.id,
-        assigned_by=uuid.UUID(admin_id)
+        role_type='FACULTY',
+        valid_from=now,
+        valid_until=now + timedelta(days=365), # 1 year validity
+        assigned_by=uuid.UUID(admin_id),
+        is_active=True
     )
     
     db.session.add(assignment)
@@ -147,7 +161,6 @@ def assign_subject():
 @bp.route('/course-outcomes', methods=['POST'])
 def create_course_outcome():
     data = request.get_json()
-    # Expecting [ { "subjectId": "...", "coCode": "CO1", "description": "..." }, ... ] or single
     
     if isinstance(data, dict):
         data = [data]
@@ -179,7 +192,6 @@ def create_course_outcome():
         # Check if exists
         exists = CourseOutcome.query.filter_by(subject_id=sub_uuid, co_code=code).first()
         if exists:
-             # update description
              exists.description = desc
         else:
             co = CourseOutcome(
@@ -205,7 +217,6 @@ def get_course_outcomes(subject_id):
 
 @bp.route('/course-outcomes/<uuid:co_id>', methods=['PUT'])
 def update_course_outcome(co_id):
-    # check_admin decorator handles auth
     co = CourseOutcome.query.get_or_404(co_id)
     data = request.get_json()
     

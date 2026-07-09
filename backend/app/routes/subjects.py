@@ -32,7 +32,7 @@ def get_subjects():
 def create_subject():
     # Admin check?
     claims = get_jwt()
-    if claims.get('role') != 'ADMIN':
+    if claims.get('role') not in ['SUPER_ADMIN', 'ADMIN']:
         return jsonify({'error': 'Admin required'}), 403
 
     data = request.get_json()
@@ -89,7 +89,7 @@ def get_subject_outcomes(subject_id):
 @jwt_required()
 def update_subject(subject_id):
     claims = get_jwt()
-    if claims.get('role') != 'ADMIN':
+    if claims.get('role') not in ['SUPER_ADMIN', 'ADMIN']:
         return jsonify({'error': 'Admin required'}), 403
         
     subject = Subject.query.get_or_404(subject_id)
@@ -108,7 +108,7 @@ def update_subject(subject_id):
 @jwt_required()
 def delete_subject(subject_id):
     claims = get_jwt()
-    if claims.get('role') != 'ADMIN':
+    if claims.get('role') not in ['SUPER_ADMIN', 'ADMIN']:
         return jsonify({'error': 'Admin required'}), 403
 
     subject = Subject.query.get_or_404(subject_id)

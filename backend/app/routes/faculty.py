@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request, current_app, send_from_directory
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 import os
-from ..models import Subject, FacultySubject, User, db
+from ..models import Subject, User, db
 
 bp = Blueprint('faculty', __name__, url_prefix='/faculty')
 
@@ -17,9 +17,16 @@ def get_my_subjects():
         return jsonify({'error': 'Invalid User ID format'}), 400
     
     # Query assigned subjects
+    from ..models import FacultyAssignment
+    from datetime import datetime
     assigned = db.session.query(Subject)\
-        .join(FacultySubject)\
-        .filter(FacultySubject.faculty_id == u_uuid)\
+        .join(FacultyAssignment)\
+        .filter(
+            FacultyAssignment.user_id == u_uuid,
+            FacultyAssignment.is_active == True,
+            FacultyAssignment.valid_from <= datetime.utcnow(),
+            FacultyAssignment.valid_until >= datetime.utcnow()
+        )\
         .all()
         
     result = []

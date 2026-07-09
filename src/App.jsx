@@ -19,6 +19,8 @@ import QuestionPaper from './pages/admin/QuestionPaper';
 import QuestionBank from './pages/admin/QuestionBank';
 import EditQuestion from './pages/admin/EditQuestion';
 import ComposePaper from './pages/admin/ComposePaper';
+import AssignmentManager from './pages/admin/AssignmentManager';
+import SystemSettings from './pages/admin/SystemSettings';
 
 // Faculty Pages
 import FacultyDashboard from './pages/faculty/Dashboard';
@@ -50,6 +52,16 @@ function App() {
           <Route path="question-bank" element={<QuestionBank />} />
           <Route path="edit-question/:questionId" element={<EditQuestion />} />
           <Route path="compose-paper" element={<ComposePaper />} />
+          <Route path="assignments" element={<AssignmentManager />} />
+        </Route>
+
+        {/* Super Admin Routes */}
+        <Route path="/superadmin" element={
+          <AdminRoute>
+            <AdminLayout />
+          </AdminRoute>
+        }>
+          <Route path="settings" element={<SystemSettings />} />
         </Route>
 
         {/* Faculty Routes */}

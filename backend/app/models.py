@@ -59,7 +59,7 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # 'ADMIN', 'FACULTY'
+    role = db.Column(db.String(20), nullable=False)  # 'SUPER_ADMIN', 'ADMIN', 'ACADEMIC'
     designation = db.Column(db.String(50)) # 'HOD','Professor','Associate Professor','Assistant Professor'
     department = db.Column(db.String(50)) # 'CSE'
     is_approved = db.Column(db.Boolean, default=False)
@@ -78,6 +78,40 @@ class User(db.Model):
             "isApproved": self.is_approved,
             "isActive": self.is_active,
             "profilePicture": self.profile_picture
+        }
+
+class FacultyAssignment(db.Model):
+    __tablename__ = 'faculty_assignments'
+
+    id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
+    user_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=False, index=True)
+    subject_id = db.Column(db.Uuid, db.ForeignKey('subjects.id'), nullable=True, index=True)
+    department = db.Column(db.String(50), nullable=True)
+    role_type = db.Column(db.String(20), nullable=False) # 'FACULTY', 'SUBJECT_EXPERT', 'HOD', 'COE', 'STAFF'
+    valid_from = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    valid_until = db.Column(db.DateTime, nullable=False)
+    delegated_from_user_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=True)
+    assigned_by = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=False)
+    assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'subject_id', 'department', 'role_type', name='unique_user_assignment'),
+    )
+
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "userId": str(self.user_id),
+            "subjectId": str(self.subject_id) if self.subject_id else None,
+            "department": self.department,
+            "roleType": self.role_type,
+            "validFrom": self.valid_from.isoformat(),
+            "validUntil": self.valid_until.isoformat(),
+            "delegatedFromUserId": str(self.delegated_from_user_id) if self.delegated_from_user_id else None,
+            "assignedBy": str(self.assigned_by),
+            "assignedAt": self.assigned_at.isoformat(),
+            "isActive": self.is_active
         }
 
 class FacultySubject(db.Model):
@@ -126,11 +160,15 @@ class Question(db.Model):
     difficulty = db.Column(db.String(10), nullable=False, default="MEDIUM")
     bloom_level = db.Column(db.String(20), nullable=False, default="understand")
     editor_data = db.Column(JSON().with_variant(JSONB, 'postgresql'), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="DRAFT") # 'DRAFT', 'PENDING_EXPERT', 'PENDING_HOD', 'APPROVED', etc.
+    review_comments = db.Column(db.Text, nullable=True)
+    reviewed_by = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     course_outcome = db.relationship('CourseOutcome', backref='questions')
-    creator = db.relationship('User', backref='questions')
+    creator = db.relationship('User', foreign_keys=[creator_id], backref='questions')
+    reviewer = db.relationship('User', foreign_keys=[reviewed_by], backref='reviewed_questions')
 
     def to_dict(self):
         return {
@@ -146,6 +184,9 @@ class Question(db.Model):
             "difficulty": self.difficulty,
             "bloomLevel": self.bloom_level,
             "editorData": self.editor_data,
+            "status": self.status,
+            "reviewComments": self.review_comments,
+            "reviewedBy": str(self.reviewed_by) if self.reviewed_by else None,
             "createdAt": self.created_at.isoformat()
         }
 
@@ -241,3 +282,45 @@ class AILog(db.Model):
 
     admin = db.relationship('User', foreign_keys=[admin_user_id])
     question = db.relationship('Question', foreign_keys=[question_id])
+
+
+class SystemSetting(db.Model):
+    __tablename__ = 'system_settings'
+
+    id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
+    key = db.Column(db.String(50), unique=True, nullable=False)
+    value = db.Column(JSON().with_variant(JSONB, 'postgresql'), nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "key": self.key,
+            "value": self.value
+        }
+
+
+class QuestionReviewStep(db.Model):
+    __tablename__ = 'question_review_steps'
+
+    id = db.Column(db.Uuid, primary_key=True, default=uuid.uuid4)
+    question_id = db.Column(db.Uuid, db.ForeignKey('questions.id'), nullable=False)
+    stage_name = db.Column(db.String(50), nullable=False) # e.g. 'SUBJECT_EXPERT', 'HOD'
+    reviewer_id = db.Column(db.Uuid, db.ForeignKey('users.id'), nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='PENDING') # 'PENDING', 'APPROVED', 'REVISION_NEEDED'
+    comments = db.Column(db.Text, nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+
+    question = db.relationship('Question', backref='review_steps')
+    reviewer = db.relationship('User', backref='reviews')
+
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "questionId": str(self.question_id),
+            "stageName": self.stage_name,
+            "reviewerId": str(self.reviewer_id) if self.reviewer_id else None,
+            "reviewerName": self.reviewer.name if self.reviewer else None,
+            "status": self.status,
+            "comments": self.comments,
+            "reviewedAt": self.reviewed_at.isoformat() if self.reviewed_at else None
+        }

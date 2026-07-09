@@ -41,16 +41,16 @@ export default function Signup() {
         setSuccess('');
 
         // Email Validation
-        const emailRegex = /^[a-zA-Z0-9._]+(\.cs\.et@msruas\.ac\.in)$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(formData.email)) {
-            setError('Invalid email. Must be a faculty email (e.g., name.cs.et@msruas.ac.in)');
+            setError('Invalid email address format.');
             return;
         }
-
+ 
         try {
             const payload = {
                 ...formData,
-                role: 'FACULTY',
+                role: 'ACADEMIC',
                 captchaId: captchaData.id,
                 captchaInput
             };
@@ -63,15 +63,15 @@ export default function Signup() {
             }
         }
     };
-
+ 
     return (
         <Container maxWidth="xs" sx={{ mt: 8 }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography component="h1" variant="h5">Faculty Signup</Typography>
+                <Typography component="h1" variant="h5">Academic Sign Up</Typography>
                 <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
                     {success && <Alert severity="success">{success}</Alert>}
                     {error && <Alert severity="error">{error}</Alert>}
-
+ 
                     <TextField
                         margin="normal"
                         required
@@ -120,11 +120,12 @@ export default function Signup() {
                     </TextField>
                     <TextField
                         margin="normal"
+                        required
                         fullWidth
                         label="Department"
                         name="department"
                         value={formData.department}
-                        disabled
+                        onChange={handleChange}
                     />
 
                     {/* CAPTCHA Section */}

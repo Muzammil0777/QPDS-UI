@@ -44,12 +44,14 @@ def create_app(config_class=Config):
         app.logger.warning("Flask-Limiter not installed. Rate limiting disabled.")
 
     # Register blueprints
-    from .routes import questions, subjects, auth, admin, faculty
+    from .routes import questions, subjects, auth, admin, faculty, assignments, settings
     app.register_blueprint(questions.bp)
     app.register_blueprint(subjects.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(admin.bp)
     app.register_blueprint(faculty.bp)
+    app.register_blueprint(assignments.bp)
+    app.register_blueprint(settings.bp)
 
     from .routes import ai
     app.register_blueprint(ai.bp)

@@ -30,12 +30,12 @@ export default function Navbar() {
                     QPDS
                 </Typography>
                 <Box>
-                    {role === 'ADMIN' && (
+                    {['SUPER_ADMIN', 'ADMIN'].includes(role) && (
                         <>
                             <Button color="inherit" component={Link} to="/admin">Dashboard</Button>
                         </>
                     )}
-                    {role === 'FACULTY' && (
+                    {['ACADEMIC', 'FACULTY'].includes(role) && (
                         <>
                             <Button color="inherit" component={Link} to="/faculty">Dashboard</Button>
                             <Button color="inherit" component={Link} to="/faculty/create-question">Create Question</Button>

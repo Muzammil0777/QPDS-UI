@@ -7,7 +7,7 @@ const AdminRoute = ({ children }) => {
     const decoded = validateToken();
 
     if (!decoded) return <Navigate to="/login" replace />;
-    if (decoded.role !== 'ADMIN') return <Navigate to="/" replace />;
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(decoded.role)) return <Navigate to="/" replace />;
 
     return children;
 };

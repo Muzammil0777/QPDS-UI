@@ -7,21 +7,53 @@ import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import SchoolIcon from '@mui/icons-material/School';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ArticleIcon from '@mui/icons-material/Article';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import SettingsIcon from '@mui/icons-material/Settings';
+import { jwtDecode } from 'jwt-decode';
 
 const drawerWidth = 240;
 
-const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin' },
-    { text: 'Faculty Management', icon: <PeopleIcon />, path: '/admin/faculty' },
-    { text: 'Subject Management', icon: <SubjectIcon />, path: '/admin/subjects' },
-    { text: 'Assign Subjects', icon: <AssignmentIndIcon />, path: '/admin/assign' },
-    { text: 'Course Outcomes', icon: <SchoolIcon />, path: '/admin/course-outcomes' },
-    { text: 'Question Paper', icon: <ArticleIcon />, path: '/admin/question-paper' },
-    { text: 'Question Bank', icon: <SubjectIcon />, path: '/admin/question-bank' },
-];
-
 export default function Sidebar() {
     const location = useLocation();
+    const token = localStorage.getItem('token');
+    
+    let role = null;
+    if (token) {
+        try {
+            const decoded = jwtDecode(token);
+            role = decoded.role;
+        } catch (e) {
+            console.error('Failed to decode token in Sidebar', e);
+        }
+    }
+
+    const menuItems = [
+        { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin' },
+        { text: 'Faculty Management', icon: <PeopleIcon />, path: '/admin/faculty' },
+        { text: 'Subject Management', icon: <SubjectIcon />, path: '/admin/subjects' },
+        { text: 'Assign Subjects', icon: <AssignmentIndIcon />, path: '/admin/assign' },
+        { text: 'Course Outcomes', icon: <SchoolIcon />, path: '/admin/course-outcomes' },
+        { text: 'Question Paper', icon: <ArticleIcon />, path: '/admin/question-paper' },
+        { text: 'Question Bank', icon: <SubjectIcon />, path: '/admin/question-bank' },
+    ];
+
+    // Admin & Super Admin get access to advanced contextual assignments manager
+    if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+        menuItems.push({ 
+            text: 'Assignment Manager', 
+            icon: <AssignmentTurnedInIcon />, 
+            path: '/admin/assignments' 
+        });
+    }
+
+    // Only SUPER_ADMIN can view and edit global system parameters
+    if (role === 'SUPER_ADMIN') {
+        menuItems.push({ 
+            text: 'System Settings', 
+            icon: <SettingsIcon />, 
+            path: '/superadmin/settings' 
+        });
+    }
 
     return (
         <Drawer

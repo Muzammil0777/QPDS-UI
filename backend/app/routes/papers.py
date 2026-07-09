@@ -316,9 +316,9 @@ def auto_generate_paper():
     except ValueError:
         return jsonify({'error': 'Invalid subjectId format'}), 400
         
-    questions = Question.query.filter_by(subject_id=sub_uuid).all()
+    questions = Question.query.filter_by(subject_id=sub_uuid, status='APPROVED').all()
     if not questions:
-        return jsonify({'error': 'No questions found for this subject'}), 400
+        return jsonify({'error': 'No approved questions found for this subject. Ensure questions are reviewed and approved first.'}), 400
         
     import random
     from ..services.validation_service import validate_question_paper

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token
 import bcrypt
 import time as _time
+import re
 from ..models import User, db
 from captcha.image import ImageCaptcha
 import base64
@@ -10,7 +11,7 @@ import uuid
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
-# Fix #4: Store (text, timestamp) tuples to enable TTL-based cleanup
+# Store (text, timestamp) tuples to enable TTL-based cleanup
 CAPTCHA_STORE = {}
 CAPTCHA_TTL_SECONDS = 300  # 5 minutes
 
@@ -73,27 +74,34 @@ def register():
         return jsonify({'error': 'Missing required fields'}), 400
 
     # Role validation
-    allowed_roles = ['FACULTY']
+    # Frontend may send 'FACULTY' or 'STAFF', internally we store as system role 'ACADEMIC'
+    allowed_signup_roles = ['FACULTY', 'STAFF', 'ACADEMIC']
     from flask import current_app
     if current_app.config.get('TESTING'):
-        allowed_roles.append('ADMIN')
+        allowed_signup_roles.append('ADMIN')
         
-    if data['role'] not in allowed_roles:
-        if data['role'] == 'ADMIN':
+    requested_role = data['role']
+    if requested_role not in allowed_signup_roles:
+        if requested_role in ['ADMIN', 'SUPER_ADMIN']:
             return jsonify({'error': 'Registration of administrators is not permitted through this endpoint'}), 403
-        return jsonify({'error': f'Role {data["role"]} is not supported for registration'}), 400
-        
+        return jsonify({'error': f'Role {requested_role} is not supported for registration'}), 400
+
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'error': 'Email already exists'}), 400
 
-    # Faculty Email Policy
-    if data['role'] == 'FACULTY':
-         from flask import current_app
-         import re
-         # Regex: Start with alphanumeric/dots/underscores, MUST end with .cs.et@msruas.ac.in
-         pattern = r'^[a-zA-Z0-9._]+(\.cs\.et@msruas\.ac\.in)$'
-         if not current_app.config.get('TESTING') and not re.match(pattern, data['email']):
-              return jsonify({'error': 'Invalid email. Must be a faculty email (e.g., name.cs.et@msruas.ac.in)'}), 400
+    # Email domain policy check from Settings
+    from ..services.rbac_service import get_settings
+    settings = get_settings()
+    allowed_domains = settings.get("allowed_email_domains", ["msruas.ac.in", "ruas.ac.in", "qpgs.com"])
+
+    email = data['email']
+    parts = email.split('@')
+    if len(parts) != 2:
+        return jsonify({'error': 'Invalid email format'}), 400
+    domain = parts[1].lower()
+
+    if not current_app.config.get('TESTING') and domain not in allowed_domains:
+        return jsonify({'error': f'Email domain @{domain} is not authorized for registration.'}), 400
 
     # Verify CAPTCHA
     captcha_id = data.get('captchaId')
@@ -105,19 +113,18 @@ def register():
     # Hash password
     hashed = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
-    # Default is_approved is False for Faculty
     is_approved = False
-    if data['role'] == 'ADMIN':
-         # In a real app, we shouldn't allow creating ADMINs openly, but for this demo/MVP:
-         is_approved = True 
-    
+    system_role = requested_role
+    if requested_role == 'ADMIN' and current_app.config.get('TESTING'):
+        is_approved = True
+
     user = User(
         name=data['name'],
         email=data['email'],
         password_hash=hashed,
-        role=data['role'],
-        designation=data.get('designation'),
-        department=data.get('department'),
+        role=system_role,
+        designation=data.get('designation', 'Assistant Professor'),
+        department=data.get('department', 'CSE'),
         is_approved=is_approved
     )
     
@@ -176,18 +183,12 @@ def check_subject_access(subject_id):
     claims = get_jwt()
     user_role = claims.get('role')
     
-    if user_role == 'ADMIN':
+    if user_role not in ['SUPER_ADMIN', 'ADMIN', 'ACADEMIC', 'FACULTY', 'STAFF', 'SUBJECT_EXPERT', 'COE', 'HOD']:
+        return False
+        
+    if user_role in ['SUPER_ADMIN', 'ADMIN']:
         return True
         
-    if user_role != 'FACULTY':
-        return False
-        
-    from ..models import FacultySubject
-    import uuid
-    try:
-        s_uuid = uuid.UUID(str(subject_id))
-        u_uuid = uuid.UUID(str(user_id))
-    except (ValueError, TypeError):
-        return False
-        
-    return FacultySubject.query.filter_by(faculty_id=u_uuid, subject_id=s_uuid).first() is not None
+    from ..services.rbac_service import has_subject_permission
+    # Allow if the academic user has a dynamic FACULTY, SUBJECT_EXPERT, or COE assignment for this subject
+    return has_subject_permission(user_id, subject_id, ['FACULTY', 'SUBJECT_EXPERT', 'COE'])
