@@ -36,7 +36,7 @@ export default function Navbar() {
                 zIndex: 1100
             }}
         >
-            <Toolbar sx={{ maxWidth: '1200px', width: '100%', mx: 'auto', px: { xs: 2, sm: 3 } }}>
+            <Toolbar sx={{ width: '100%', px: { xs: 2, sm: 4 } }}>
                 <Typography 
                     variant="h6" 
                     component={Link} 

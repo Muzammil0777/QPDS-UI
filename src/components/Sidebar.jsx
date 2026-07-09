@@ -1,5 +1,5 @@
 import React from 'react';
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Toolbar, Box } from '@mui/material';
+import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Box } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
 import PeopleIcon from '@mui/icons-material/People';
 import SubjectIcon from '@mui/icons-material/Subject';
@@ -61,25 +61,68 @@ export default function Sidebar() {
             sx={{
                 width: drawerWidth,
                 flexShrink: 0,
-                [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box', mt: 8 }, // mt: 8 to clear AppBar
+                [`& .MuiDrawer-paper`]: { 
+                    width: drawerWidth, 
+                    boxSizing: 'border-box', 
+                    mt: 8,
+                    borderRight: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'background.default'
+                },
                 display: { print: 'none' }, // Hide in print mode
             }}
         >
             <Toolbar />
-            <Box sx={{ overflow: 'auto' }}>
-                <List>
-                    {menuItems.map((item) => (
-                        <ListItem
-                            button
-                            key={item.text}
-                            component={Link}
-                            to={item.path}
-                            selected={location.pathname === item.path}
-                        >
-                            <ListItemIcon>{item.icon}</ListItemIcon>
-                            <ListItemText primary={item.text} />
-                        </ListItem>
-                    ))}
+            <Box sx={{ overflow: 'auto', py: 2 }}>
+                <List sx={{ px: 1.5 }}>
+                    {menuItems.map((item) => {
+                        const isSelected = location.pathname === item.path;
+                        return (
+                            <ListItem
+                                key={item.text}
+                                disablePadding
+                                sx={{ mb: 0.5 }}
+                            >
+                                <ListItemButton
+                                    component={Link}
+                                    to={item.path}
+                                    selected={isSelected}
+                                    sx={{
+                                        borderRadius: 2,
+                                        py: 1,
+                                        px: 2,
+                                        color: isSelected ? 'primary.main' : 'text.secondary',
+                                        '&.Mui-selected': {
+                                            bgcolor: 'rgba(30, 58, 138, 0.06)',
+                                            color: 'primary.main',
+                                            fontWeight: 700,
+                                            '&:hover': {
+                                                bgcolor: 'rgba(30, 58, 138, 0.1)'
+                                            }
+                                        },
+                                        '&:hover': {
+                                            bgcolor: 'rgba(0, 0, 0, 0.03)',
+                                            borderRadius: 2
+                                        }
+                                    }}
+                                >
+                                    <ListItemIcon sx={{ 
+                                        color: isSelected ? 'primary.main' : 'text.secondary',
+                                        minWidth: 36
+                                    }}>
+                                        {item.icon}
+                                    </ListItemIcon>
+                                    <ListItemText 
+                                        primary={item.text} 
+                                        primaryTypographyProps={{ 
+                                            fontWeight: isSelected ? 700 : 500,
+                                            fontSize: '0.875rem'
+                                        }} 
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        );
+                    })}
                 </List>
             </Box>
         </Drawer>

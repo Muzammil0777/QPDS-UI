@@ -103,15 +103,15 @@ export default function FacultyDashboard() {
     };
 
     return (
-        <Box sx={{ p: 4, bgcolor: '#fbfbfb', minHeight: '90vh' }}>
+        <Box sx={{ p: 4, bgcolor: 'background.default', minHeight: '90vh' }}>
             {/* Header / Greeting section */}
-            <Paper variant="outlined" sx={{ p: 3, mb: 4, borderRadius: 3, border: '1px solid #eaeaea', bgcolor: '#fff' }}>
+            <Paper variant="outlined" sx={{ p: 3, mb: 4, borderRadius: 3, borderColor: 'divider', bgcolor: 'background.paper' }}>
                 <Grid container spacing={3} alignItems="center">
                     <Grid item>
                         <Box sx={{ position: 'relative' }}>
                             <Avatar
                                 src={user.profilePicture ? `http://localhost:5000/${user.profilePicture}` : undefined}
-                                sx={{ width: 90, height: 90, bgcolor: '#1a1a1a', fontSize: '2.2rem', fontWeight: 600 }}
+                                sx={{ width: 90, height: 90, bgcolor: 'primary.main', fontSize: '2.2rem', fontWeight: 600 }}
                             >
                                 {!user.profilePicture && (user.name ? user.name[0] : 'U')}
                             </Avatar>
@@ -123,13 +123,14 @@ export default function FacultyDashboard() {
                                     position: 'absolute', 
                                     bottom: -5, 
                                     right: -5, 
-                                    bgcolor: '#fff', 
-                                    border: '1px solid #ddd',
-                                    '&:hover': { bgcolor: '#f5f5f5' } 
+                                    bgcolor: 'background.paper', 
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } 
                                 }}
                             >
                                 <input hidden accept="image/*" type="file" onChange={handleUploadClick} />
-                                <PhotoCamera sx={{ fontSize: 18, color: '#555' }} />
+                                <PhotoCamera sx={{ fontSize: 18, color: 'text.secondary' }} />
                             </IconButton>
                         </Box>
                     </Grid>
