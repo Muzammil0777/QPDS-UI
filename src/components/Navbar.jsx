@@ -24,30 +24,107 @@ export default function Navbar() {
     };
 
     return (
-        <AppBar position="static">
-            <Toolbar>
-                <Typography variant="h6" component={Link} to="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit' }}>
+        <AppBar 
+            position="sticky" 
+            sx={{ 
+                bgcolor: 'rgba(255, 255, 255, 0.8)', 
+                backdropFilter: 'blur(12px)', 
+                borderBottom: '1px solid #eaeaea', 
+                boxShadow: 'none', 
+                color: '#1a1a1a',
+                top: 0,
+                zIndex: 1100
+            }}
+        >
+            <Toolbar sx={{ maxWidth: '1200px', width: '100%', mx: 'auto', px: { xs: 2, sm: 3 } }}>
+                <Typography 
+                    variant="h6" 
+                    component={Link} 
+                    to="/" 
+                    sx={{ 
+                        flexGrow: 1, 
+                        textDecoration: 'none', 
+                        color: '#1a1a1a', 
+                        fontWeight: 800, 
+                        letterSpacing: '-0.03em',
+                        fontSize: '1.25rem'
+                    }}
+                >
                     QPDS
                 </Typography>
-                <Box>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                     {['SUPER_ADMIN', 'ADMIN'].includes(role) && (
-                        <>
-                            <Button color="inherit" component={Link} to="/admin">Dashboard</Button>
-                        </>
+                        <Button 
+                            color="inherit" 
+                            component={Link} 
+                            to="/admin"
+                            sx={{ textTransform: 'none', fontWeight: 600, color: '#444', '&:hover': { color: '#000', bgcolor: 'rgba(0,0,0,0.04)' } }}
+                        >
+                            Dashboard
+                        </Button>
                     )}
                     {['ACADEMIC', 'FACULTY'].includes(role) && (
                         <>
-                            <Button color="inherit" component={Link} to="/faculty">Dashboard</Button>
-                            <Button color="inherit" component={Link} to="/faculty/create-question">Create Question</Button>
+                            <Button 
+                                color="inherit" 
+                                component={Link} 
+                                to="/faculty"
+                                sx={{ textTransform: 'none', fontWeight: 600, color: '#444', '&:hover': { color: '#000', bgcolor: 'rgba(0,0,0,0.04)' } }}
+                            >
+                                Dashboard
+                            </Button>
+                            <Button 
+                                color="inherit" 
+                                component={Link} 
+                                to="/faculty/create-question"
+                                sx={{ textTransform: 'none', fontWeight: 600, color: '#444', '&:hover': { color: '#000', bgcolor: 'rgba(0,0,0,0.04)' } }}
+                            >
+                                Create Question
+                            </Button>
                         </>
                     )}
-
+ 
                     {token ? (
-                        <Button color="inherit" onClick={handleLogout}>Logout</Button>
+                        <Button 
+                            variant="outlined"
+                            onClick={handleLogout}
+                            sx={{ 
+                                textTransform: 'none', 
+                                fontWeight: 600, 
+                                color: '#1a1a1a', 
+                                borderColor: '#1a1a1a',
+                                borderRadius: 2,
+                                '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: '#1a1a1a' } 
+                            }}
+                        >
+                            Logout
+                        </Button>
                     ) : (
                         <>
-                            <Button color="inherit" component={Link} to="/login">Login</Button>
-                            <Button color="inherit" component={Link} to="/signup">Signup</Button>
+                            <Button 
+                                color="inherit" 
+                                component={Link} 
+                                to="/login"
+                                sx={{ textTransform: 'none', fontWeight: 600, color: '#444', '&:hover': { color: '#000', bgcolor: 'rgba(0,0,0,0.04)' } }}
+                            >
+                                Login
+                            </Button>
+                            <Button 
+                                variant="contained"
+                                component={Link} 
+                                to="/signup"
+                                sx={{ 
+                                    textTransform: 'none', 
+                                    fontWeight: 600, 
+                                    bgcolor: '#1a1a1a', 
+                                    color: '#fff',
+                                    borderRadius: 2,
+                                    boxShadow: 'none',
+                                    '&:hover': { bgcolor: '#333', boxShadow: 'none' } 
+                                }}
+                            >
+                                Signup
+                            </Button>
                         </>
                     )}
                 </Box>

@@ -11,42 +11,64 @@ import {
     Divider 
 } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import SecurityIcon from '@mui/icons-material/Security';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import StorageIcon from '@mui/icons-material/Storage';
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
+import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
+import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
+import HistoryToggleOffOutlinedIcon from '@mui/icons-material/HistoryToggleOffOutlined';
 
 export default function Home() {
     const navigate = useNavigate();
 
     return (
-        <Box sx={{ bgcolor: '#fafafa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ 
+            bgcolor: '#ffffff', 
+            minHeight: '100vh', 
+            display: 'flex', 
+            flexDirection: 'column',
+            position: 'relative',
+            overflow: 'hidden'
+        }}>
+            {/* Elegant, subtle background decoration (Spotlight Gradient) */}
+            <Box sx={{
+                position: 'absolute',
+                top: '-20%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '1000px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(26,118,210,0.03) 0%, rgba(255,255,255,0) 70%)',
+                zIndex: 0,
+                pointerEvents: 'none'
+            }} />
+
             {/* Hero Section */}
-            <Container maxWidth="lg" sx={{ pt: 12, pb: 10 }}>
-                <Box sx={{ textAlign: 'center', maxWidth: 800, mx: 'auto', mb: 8 }}>
+            <Container maxWidth="lg" sx={{ pt: 16, pb: 12, position: 'relative', zIndex: 1 }}>
+                <Box sx={{ textAlign: 'center', maxWidth: 850, mx: 'auto', mb: 10 }}>
                     <Typography 
                         component="span" 
                         variant="overline" 
                         sx={{ 
                             fontWeight: 700, 
-                            color: 'primary.main', 
-                            letterSpacing: 2, 
+                            color: '#666666', 
+                            letterSpacing: '0.15em', 
                             mb: 2, 
-                            display: 'inline-block' 
+                            display: 'inline-block',
+                            fontSize: '0.8rem'
                         }}
                     >
-                        Enterprise Academic Solutions
+                        SECURE EXAM ORCHESTRATION
                     </Typography>
                     
                     <Typography 
-                        variant="h2" 
+                        variant="h1" 
                         component="h1" 
                         sx={{ 
-                            fontWeight: 800, 
-                            color: '#1a1a1a', 
-                            lineHeight: 1.15,
+                            fontWeight: 900, 
+                            color: '#111111', 
+                            lineHeight: 1.1,
                             mb: 3,
-                            letterSpacing: '-0.02em'
+                            letterSpacing: '-0.04em',
+                            fontSize: { xs: '2.5rem', sm: '3.75rem', md: '4.5rem' }
                         }}
                     >
                         Question Paper Generation & Distribution System
@@ -58,31 +80,35 @@ export default function Home() {
                         sx={{ 
                             fontWeight: 400, 
                             lineHeight: 1.6, 
-                            mb: 5,
-                            maxWidth: 650,
-                            mx: 'auto'
+                            mb: 6,
+                            maxWidth: 700,
+                            mx: 'auto',
+                            fontSize: { xs: '1rem', sm: '1.15rem' },
+                            color: '#555555'
                         }}
                     >
-                        A secure, audit-compliant academic portal designed to orchestrate question banking, peer-review workflows, and automated exam paper composition.
+                        An institutional portal engineered to orchestrate question banking, peer-review workflows, and automated exam paper distribution with absolute audit compliance.
                     </Typography>
                     
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                    <Box sx={{ display: 'flex', gap: 2.5, justifyContent: 'center', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center' }}>
                         <Button 
                             variant="contained" 
                             size="large"
                             endIcon={<ArrowForwardIcon />}
                             onClick={() => navigate('/login')}
                             sx={{ 
-                                bgcolor: '#1a1a1a', 
-                                color: '#fff', 
+                                bgcolor: '#111111', 
+                                color: '#ffffff', 
                                 px: 4, 
-                                py: 1.5,
-                                borderRadius: 2,
+                                py: 1.8,
+                                borderRadius: 3,
                                 textTransform: 'none',
                                 fontWeight: 600,
                                 fontSize: '1rem',
+                                boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
                                 '&:hover': {
-                                    bgcolor: '#333'
+                                    bgcolor: '#222222',
+                                    boxShadow: '0 6px 20px rgba(0,0,0,0.15)'
                                 }
                             }}
                         >
@@ -93,101 +119,154 @@ export default function Home() {
                             size="large"
                             onClick={() => navigate('/about')}
                             sx={{ 
-                                color: '#1a1a1a', 
-                                borderColor: '#ccc',
+                                color: '#111111', 
+                                borderColor: '#e0e0e0',
                                 px: 4, 
-                                py: 1.5,
-                                borderRadius: 2,
+                                py: 1.8,
+                                borderRadius: 3,
                                 textTransform: 'none',
                                 fontWeight: 600,
                                 fontSize: '1rem',
                                 '&:hover': {
-                                    borderColor: '#1a1a1a',
-                                    bgcolor: 'rgba(0,0,0,0.02)'
+                                    borderColor: '#111111',
+                                    bgcolor: '#f9f9f9'
                                 }
                             }}
                         >
-                            Documentation
+                            Read Documentation
                         </Button>
                     </Box>
                 </Box>
 
-                <Divider sx={{ my: 6, borderColor: '#eaeaea' }} />
+                <Divider sx={{ my: 8, borderColor: '#f0f0f0' }} />
 
                 {/* Features Section */}
-                <Box sx={{ mb: 4 }}>
+                <Box>
                     <Typography 
                         variant="h4" 
                         sx={{ 
                             textAlign: 'center', 
-                            fontWeight: 700, 
-                            color: '#1a1a1a',
-                            mb: 6
+                            fontWeight: 800, 
+                            color: '#111111',
+                            letterSpacing: '-0.02em',
+                            mb: 8
                         }}
                     >
-                        Engineered for High-Trust Evaluations
+                        Built for High-Trust Academic Operations
                     </Typography>
 
                     <Grid container spacing={4}>
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card variant="outlined" sx={{ height: '100%', borderRadius: 3, border: '1px solid #eaeaea', bgcolor: '#fff' }}>
-                                <CardContent sx={{ p: 3 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                        <SecurityIcon color="primary" sx={{ fontSize: 28 }} />
+                            <Card variant="outlined" sx={{ 
+                                height: '100%', 
+                                borderRadius: 4, 
+                                border: '1px solid #f0f0f0', 
+                                bgcolor: '#ffffff',
+                                transition: 'transform 0.2s, box-shadow 0.2s',
+                                '&:hover': {
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 12px 24px rgba(0,0,0,0.03)',
+                                    borderColor: '#dcdcdc'
+                                }
+                            }}>
+                                <CardContent sx={{ p: 4 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                                        <Box sx={{ bgcolor: '#f4f4f4', p: 1.5, borderRadius: 2.5, display: 'flex' }}>
+                                            <SecurityOutlinedIcon sx={{ fontSize: 24, color: '#111111' }} />
+                                        </Box>
                                     </Box>
-                                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#1a1a1a' }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, color: '#111111', letterSpacing: '-0.01em' }}>
                                         Contextual RBAC
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-                                        Time-bound assignments (Faculty, Subject Expert, HOD) mapping specific roles to courses for semesters.
+                                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, color: '#666666' }}>
+                                        Dynamic, time-bound roles mapped to specific courses for clean authorization and course control.
                                     </Typography>
                                 </CardContent>
                             </Card>
                         </Grid>
 
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card variant="outlined" sx={{ height: '100%', borderRadius: 3, border: '1px solid #eaeaea', bgcolor: '#fff' }}>
-                                <CardContent sx={{ p: 3 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                        <AssignmentIcon color="primary" sx={{ fontSize: 28 }} />
+                            <Card variant="outlined" sx={{ 
+                                height: '100%', 
+                                borderRadius: 4, 
+                                border: '1px solid #f0f0f0', 
+                                bgcolor: '#ffffff',
+                                transition: 'transform 0.2s, box-shadow 0.2s',
+                                '&:hover': {
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 12px 24px rgba(0,0,0,0.03)',
+                                    borderColor: '#dcdcdc'
+                                }
+                            }}>
+                                <CardContent sx={{ p: 4 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                                        <Box sx={{ bgcolor: '#f4f4f4', p: 1.5, borderRadius: 2.5, display: 'flex' }}>
+                                            <AssignmentOutlinedIcon sx={{ fontSize: 24, color: '#111111' }} />
+                                        </Box>
                                     </Box>
-                                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#1a1a1a' }}>
-                                        N-Stage Workflows
+                                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, color: '#111111', letterSpacing: '-0.01em' }}>
+                                        Flexible Review
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-                                        Customizable review sequences logging audit histories, peer corrections, and reviewer decisions.
+                                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, color: '#666666' }}>
+                                        Configurable N-stage peer review and editorial approval workflow tracking step logs.
                                     </Typography>
                                 </CardContent>
                             </Card>
                         </Grid>
 
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card variant="outlined" sx={{ height: '100%', borderRadius: 3, border: '1px solid #eaeaea', bgcolor: '#fff' }}>
-                                <CardContent sx={{ p: 3 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                        <StorageIcon color="primary" sx={{ fontSize: 28 }} />
+                            <Card variant="outlined" sx={{ 
+                                height: '100%', 
+                                borderRadius: 4, 
+                                border: '1px solid #f0f0f0', 
+                                bgcolor: '#ffffff',
+                                transition: 'transform 0.2s, box-shadow 0.2s',
+                                '&:hover': {
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 12px 24px rgba(0,0,0,0.03)',
+                                    borderColor: '#dcdcdc'
+                                }
+                            }}>
+                                <CardContent sx={{ p: 4 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                                        <Box sx={{ bgcolor: '#f4f4f4', p: 1.5, borderRadius: 2.5, display: 'flex' }}>
+                                            <LayersOutlinedIcon sx={{ fontSize: 24, color: '#111111' }} />
+                                        </Box>
                                     </Box>
-                                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#1a1a1a' }}>
-                                        Smart Blueprinting
+                                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, color: '#111111', letterSpacing: '-0.01em' }}>
+                                        Blueprint Composer
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-                                        Instantly generate exam sheets matching Bloom's taxonomy balances and course specifications.
+                                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, color: '#666666' }}>
+                                        Generate balanced assessment papers based on Bloom's taxonomy and mapped outcomes.
                                     </Typography>
                                 </CardContent>
                             </Card>
                         </Grid>
 
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card variant="outlined" sx={{ height: '100%', borderRadius: 3, border: '1px solid #eaeaea', bgcolor: '#fff' }}>
-                                <CardContent sx={{ p: 3 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                        <VerifiedUserIcon color="primary" sx={{ fontSize: 28 }} />
+                            <Card variant="outlined" sx={{ 
+                                height: '100%', 
+                                borderRadius: 4, 
+                                border: '1px solid #f0f0f0', 
+                                bgcolor: '#ffffff',
+                                transition: 'transform 0.2s, box-shadow 0.2s',
+                                '&:hover': {
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 12px 24px rgba(0,0,0,0.03)',
+                                    borderColor: '#dcdcdc'
+                                }
+                            }}>
+                                <CardContent sx={{ p: 4 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                                        <Box sx={{ bgcolor: '#f4f4f4', p: 1.5, borderRadius: 2.5, display: 'flex' }}>
+                                            <HistoryToggleOffOutlinedIcon sx={{ fontSize: 24, color: '#111111' }} />
+                                        </Box>
                                     </Box>
-                                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#1a1a1a' }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, color: '#111111', letterSpacing: '-0.01em' }}>
                                         Audit Assurance
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-                                        Immutable logs tracking who created, edited, reviewed, or exported question materials.
+                                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, color: '#666666' }}>
+                                        Continuous security logs and change tracking on each question revision.
                                     </Typography>
                                 </CardContent>
                             </Card>
@@ -197,8 +276,8 @@ export default function Home() {
             </Container>
 
             {/* Footer */}
-            <Box sx={{ mt: 'auto', py: 4, borderTop: '1px solid #eaeaea', bgcolor: '#fff', textAlign: 'center' }}>
-                <Typography variant="caption" color="text.secondary">
+            <Box sx={{ mt: 'auto', py: 5, borderTop: '1px solid #f0f0f0', bgcolor: '#ffffff', textAlign: 'center' }}>
+                <Typography variant="caption" sx={{ color: '#888888', letterSpacing: '0.02em' }}>
                     QPDS © {new Date().getFullYear()} — Question Paper Generation and Distribution System. All rights reserved.
                 </Typography>
             </Box>
