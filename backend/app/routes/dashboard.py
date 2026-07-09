@@ -56,11 +56,8 @@ def get_academic_dashboard():
         fac_subject_ids = {a.subject_id for a in assignments if a.role_type == 'FACULTY' and a.subject_id}
         fac_subject_ids.update({ls.subject_id for ls in legacy_subs if ls.subject_id})
 
-        if user.role in ['SUPER_ADMIN', 'ADMIN']:
-            # Admins get all subjects
-            fac_subjects = Subject.query.all()
-        else:
-            fac_subjects = Subject.query.filter(Subject.id.in_(fac_subject_ids)).all() if fac_subject_ids else []
+        # Resolve subjects strictly from actual database mapping
+        fac_subjects = Subject.query.filter(Subject.id.in_(fac_subject_ids)).all() if fac_subject_ids else []
 
         for sub in fac_subjects:
             result['facultySubjects'].append({
@@ -73,10 +70,8 @@ def get_academic_dashboard():
 
         # 2. SUBJECT_EXPERT: Fetch review list
         expert_subject_ids = {a.subject_id for a in assignments if a.role_type == 'SUBJECT_EXPERT' and a.subject_id}
-        if user.role in ['SUPER_ADMIN', 'ADMIN']:
-            expert_subjects = Subject.query.all()
-        else:
-            expert_subjects = Subject.query.filter(Subject.id.in_(expert_subject_ids)).all() if expert_subject_ids else []
+        # Resolve subjects strictly from actual database mapping
+        expert_subjects = Subject.query.filter(Subject.id.in_(expert_subject_ids)).all() if expert_subject_ids else []
 
         for sub in expert_subjects:
             pending_count = Question.query.filter_by(subject_id=sub.id, status='PENDING_REVIEW').count()
