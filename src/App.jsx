@@ -1,5 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import theme from './theme';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import About from './pages/About';
@@ -29,7 +31,8 @@ import FacultySubjectDetails from './pages/faculty/FacultySubjectDetails';
 
 function App() {
   return (
-    <>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -84,7 +87,7 @@ function App() {
         } />
 
       </Routes>
-    </>
+    </ThemeProvider>
   );
 }
 

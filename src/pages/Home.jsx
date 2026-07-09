@@ -48,7 +48,7 @@ export default function Home() {
     const navigate = useNavigate();
 
     return (
-        <Box sx={{ bgcolor: '#ffffff', minHeight: '100vh', color: '#111111', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', color: 'text.primary' }}>
             
             {/* HERO SECTION */}
             <Container maxWidth="lg" sx={{ pt: { xs: 12, md: 20 }, pb: { xs: 8, md: 16 } }}>
@@ -65,7 +65,7 @@ export default function Home() {
                                     variant="overline" 
                                     sx={{ 
                                         fontWeight: 700, 
-                                        color: '#666666', 
+                                        color: 'text.secondary', 
                                         letterSpacing: '0.15em', 
                                         mb: 3, 
                                         display: 'inline-block',
@@ -80,7 +80,7 @@ export default function Home() {
                                 <Typography 
                                     variant="h1" 
                                     sx={{ 
-                                        fontWeight: 900, 
+                                        fontWeight: 800, // ExtraBold per guidelines
                                         letterSpacing: '-0.04em', 
                                         lineHeight: 1.05,
                                         mb: 3,
@@ -88,7 +88,7 @@ export default function Home() {
                                     }}
                                 >
                                     Secure Academic Operations.<br />
-                                    <Box component="span" sx={{ color: '#666666' }}>Built for Universities.</Box>
+                                    <Box component="span" sx={{ color: 'text.secondary' }}>Built for Universities.</Box>
                                 </Typography>
                             </motion.div>
                             
@@ -96,7 +96,7 @@ export default function Home() {
                                 <Typography 
                                     variant="body1" 
                                     sx={{ 
-                                        color: '#555555', 
+                                        color: 'text.secondary', 
                                         fontSize: { xs: '1.05rem', sm: '1.15rem' }, 
                                         lineHeight: 1.6, 
                                         mb: 6,
@@ -111,42 +111,25 @@ export default function Home() {
                                 <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                                     <Button 
                                         variant="contained" 
+                                        color="primary"
                                         size="large"
                                         endIcon={<ArrowForwardIcon />}
                                         onClick={() => navigate('/login')}
                                         sx={{ 
-                                            bgcolor: '#111111', 
-                                            color: '#ffffff', 
                                             px: 4, 
                                             py: 1.8,
-                                            borderRadius: 2.5,
-                                            textTransform: 'none',
-                                            fontWeight: 600,
-                                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                                            '&:hover': {
-                                                bgcolor: '#222222',
-                                                boxShadow: '0 6px 18px rgba(0,0,0,0.12)'
-                                            }
                                         }}
                                     >
                                         Request Demo
                                     </Button>
                                     <Button 
                                         variant="outlined" 
+                                        color="secondary"
                                         size="large"
                                         onClick={() => navigate('/about')}
                                         sx={{ 
-                                            color: '#111111', 
-                                            borderColor: '#e2e2e2',
                                             px: 4, 
                                             py: 1.8,
-                                            borderRadius: 2.5,
-                                            textTransform: 'none',
-                                            fontWeight: 600,
-                                            '&:hover': {
-                                                borderColor: '#111111',
-                                                bgcolor: '#fcfcfc'
-                                            }
                                         }}
                                     >
                                         View Documentation
@@ -638,20 +621,13 @@ export default function Home() {
                 </Typography>
                 <Button 
                     variant="contained" 
+                    color="primary"
                     size="large"
                     endIcon={<ArrowForwardIcon />}
                     onClick={() => navigate('/login')}
                     sx={{ 
-                        bgcolor: '#111111', 
-                        color: '#ffffff', 
                         px: 5, 
                         py: 2,
-                        borderRadius: 3,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        '&:hover': {
-                            bgcolor: '#222222'
-                        }
                     }}
                 >
                     Request Portal Access
