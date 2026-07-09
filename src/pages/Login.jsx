@@ -41,9 +41,9 @@ export default function Login() {
             localStorage.setItem('token', token);
             const decoded = jwtDecode(token);
 
-            if (decoded.role === 'ADMIN') {
+            if (['SUPER_ADMIN', 'ADMIN'].includes(decoded.role)) {
                 navigate('/admin', { replace: true });
-            } else if (decoded.role === 'FACULTY') {
+            } else if (['ACADEMIC', 'FACULTY'].includes(decoded.role)) {
                 navigate('/faculty', { replace: true });
             } else {
                 setError('Unknown role');
