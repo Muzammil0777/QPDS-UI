@@ -27,11 +27,11 @@ export default function Navbar() {
         <AppBar 
             position="sticky" 
             sx={{ 
-                bgcolor: 'rgba(255, 255, 255, 0.8)', 
-                backdropFilter: 'blur(12px)', 
-                borderBottom: '1px solid #eaeaea', 
+                bgcolor: 'background.default', 
+                borderBottom: '1px solid',
+                borderColor: 'divider', 
                 boxShadow: 'none', 
-                color: '#1a1a1a',
+                color: 'text.primary',
                 top: 0,
                 zIndex: 1100
             }}
@@ -44,7 +44,7 @@ export default function Navbar() {
                     sx={{ 
                         flexGrow: 1, 
                         textDecoration: 'none', 
-                        color: '#1a1a1a', 
+                        color: 'text.primary', 
                         fontWeight: 800, 
                         letterSpacing: '-0.03em',
                         fontSize: '1.25rem'
@@ -58,7 +58,7 @@ export default function Navbar() {
                             color="inherit" 
                             component={Link} 
                             to="/admin"
-                            sx={{ textTransform: 'none', fontWeight: 600, color: '#444', '&:hover': { color: '#000', bgcolor: 'rgba(0,0,0,0.04)' } }}
+                            sx={{ fontWeight: 600 }}
                         >
                             Dashboard
                         </Button>
@@ -69,7 +69,7 @@ export default function Navbar() {
                                 color="inherit" 
                                 component={Link} 
                                 to="/faculty"
-                                sx={{ textTransform: 'none', fontWeight: 600, color: '#444', '&:hover': { color: '#000', bgcolor: 'rgba(0,0,0,0.04)' } }}
+                                sx={{ fontWeight: 600 }}
                             >
                                 Dashboard
                             </Button>
@@ -77,7 +77,10 @@ export default function Navbar() {
                                 color="inherit" 
                                 component={Link} 
                                 to="/faculty/create-question"
-                                sx={{ textTransform: 'none', fontWeight: 600, color: '#444', '&:hover': { color: '#000', bgcolor: 'rgba(0,0,0,0.04)' } }}
+                                sx={{ 
+                                    fontWeight: 600,
+                                    display: { xs: 'none', sm: 'inline-flex' } // Hide on mobile to prevent overflow
+                                }}
                             >
                                 Create Question
                             </Button>
@@ -87,15 +90,9 @@ export default function Navbar() {
                     {token ? (
                         <Button 
                             variant="outlined"
+                            color="secondary"
                             onClick={handleLogout}
-                            sx={{ 
-                                textTransform: 'none', 
-                                fontWeight: 600, 
-                                color: '#1a1a1a', 
-                                borderColor: '#1a1a1a',
-                                borderRadius: 2,
-                                '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: '#1a1a1a' } 
-                            }}
+                            sx={{ fontWeight: 600 }}
                         >
                             Logout
                         </Button>
@@ -105,23 +102,16 @@ export default function Navbar() {
                                 color="inherit" 
                                 component={Link} 
                                 to="/login"
-                                sx={{ textTransform: 'none', fontWeight: 600, color: '#444', '&:hover': { color: '#000', bgcolor: 'rgba(0,0,0,0.04)' } }}
+                                sx={{ fontWeight: 600 }}
                             >
                                 Login
                             </Button>
                             <Button 
                                 variant="contained"
+                                color="primary"
                                 component={Link} 
                                 to="/signup"
-                                sx={{ 
-                                    textTransform: 'none', 
-                                    fontWeight: 600, 
-                                    bgcolor: '#1a1a1a', 
-                                    color: '#fff',
-                                    borderRadius: 2,
-                                    boxShadow: 'none',
-                                    '&:hover': { bgcolor: '#333', boxShadow: 'none' } 
-                                }}
+                                sx={{ fontWeight: 600 }}
                             >
                                 Signup
                             </Button>

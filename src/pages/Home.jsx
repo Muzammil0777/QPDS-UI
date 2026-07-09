@@ -152,7 +152,7 @@ export default function Home() {
                                 bgcolor: '#ffffff', 
                                 boxShadow: '0 20px 40px rgba(0,0,0,0.03)',
                                 overflow: 'hidden',
-                                p: 3.5
+                                p: { xs: 2.25, sm: 3.5 }
                             }}>
                                 {/* Mockup Topbar */}
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -332,7 +332,7 @@ export default function Home() {
                                     borderColor: 'divider',
                                     bgcolor: 'background.default', 
                                     borderRadius: 3.5, 
-                                    p: 3, 
+                                    p: { xs: 2.25, sm: 3 }, 
                                     width: '100%',
                                     position: 'relative',
                                     display: 'flex',
@@ -383,7 +383,7 @@ export default function Home() {
                     {/* Faculty Workspace */}
                     <Grid container spacing={6} alignItems="center">
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3, bgcolor: 'background.default', boxShadow: '0 10px 30px rgba(0,0,0,0.01)' }}>
+                            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: { xs: 2.25, sm: 3 }, bgcolor: 'background.default', boxShadow: '0 10px 30px rgba(0,0,0,0.01)' }}>
                                 <Box sx={{ display: 'flex', gap: 1.5, mb: 2, alignItems: 'center' }}>
                                     <Avatar sx={{ bgcolor: 'background.paper', color: 'text.primary', width: 32, height: 32, fontSize: '0.85rem', border: '1px solid', borderColor: 'divider' }}>F</Avatar>
                                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Faculty Drafting Board</Typography>
@@ -425,7 +425,7 @@ export default function Home() {
                             </Box>
                         </Grid>
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3, bgcolor: 'background.default', boxShadow: '0 10px 30px rgba(0,0,0,0.01)' }}>
+                            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: { xs: 2.25, sm: 3 }, bgcolor: 'background.default', boxShadow: '0 10px 30px rgba(0,0,0,0.01)' }}>
                                 <Box sx={{ display: 'flex', gap: 1.5, mb: 2, alignItems: 'center' }}>
                                     <Avatar sx={{ bgcolor: 'background.paper', color: 'text.primary', width: 32, height: 32, fontSize: '0.85rem', border: '1px solid', borderColor: 'divider' }}>E</Avatar>
                                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Peer Evaluation Queue</Typography>
@@ -447,7 +447,7 @@ export default function Home() {
                     {/* HOD Workspace */}
                     <Grid container spacing={6} alignItems="center">
                         <Grid size={{ xs: 12, md: 6 }}>
-                            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3, bgcolor: 'background.default', boxShadow: '0 10px 30px rgba(0,0,0,0.01)' }}>
+                            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: { xs: 2.25, sm: 3 }, bgcolor: 'background.default', boxShadow: '0 10px 30px rgba(0,0,0,0.01)' }}>
                                 <Box sx={{ display: 'flex', gap: 1.5, mb: 2, alignItems: 'center' }}>
                                     <Avatar sx={{ bgcolor: 'background.paper', color: 'text.primary', width: 32, height: 32, fontSize: '0.85rem', border: '1px solid', borderColor: 'divider' }}>H</Avatar>
                                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Department Assignment Board</Typography>
@@ -502,7 +502,7 @@ export default function Home() {
                             { title: 'Configuration Driven Policies', desc: 'Control domain bounds and departmental configurations via a centralized panel.' }
                         ].map((sec, idx) => (
                             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
-                                <Box sx={{ p: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.default', borderRadius: 3.5, height: '100%' }}>
+                                <Box sx={{ p: { xs: 2.25, sm: 3 }, border: '1px solid', borderColor: 'divider', bgcolor: 'background.default', borderRadius: 3.5, height: '100%' }}>
                                     <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>{sec.title}</Typography>
                                     <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.5 }}>{sec.desc}</Typography>
                                 </Box>
