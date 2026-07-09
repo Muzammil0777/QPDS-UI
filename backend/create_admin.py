@@ -5,6 +5,9 @@ import bcrypt
 app = create_app()
 
 with app.app_context():
+    # Auto-create missing tables in the target database (essential for Neon DB deployments)
+    db.create_all()
+    
     # 1. Seed System Settings
     settings_to_seed = {
         "allowed_email_domains": ["msruas.ac.in", "ruas.ac.in", "qpgs.com"],
