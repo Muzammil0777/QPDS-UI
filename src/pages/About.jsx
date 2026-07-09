@@ -3,11 +3,9 @@ import React from "react";
 function About() {
   return (
     <div className="page-container">
-      <h1>About Us</h1>
+      <h1>Asteriq Documentation</h1>
       <p>
-        QPDS is an AI-powered Question Paper Design System that helps automate
-        question creation, validation, and secure distribution. Built by
-        students of M.S. Ramaiah University under guidance of faculty mentors.
+        Asteriq is a secure, enterprise-grade academic operations platform that modernizes university examination workflows through intelligent automation, governance, and role-based validation.
       </p>
     </div>
   );

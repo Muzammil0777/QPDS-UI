@@ -67,8 +67,13 @@ export default function Signup() {
     return (
         <Container maxWidth="xs" sx={{ mt: 8 }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography component="h1" variant="h5">Academic Sign Up</Typography>
-                <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+                <Typography component="h1" variant="h4" sx={{ fontWeight: 800, mb: 1, letterSpacing: '-0.02em', fontFamily: 'Plus Jakarta Sans, sans-serif', color: 'primary.main', textAlign: 'center' }}>
+                    Welcome to Asteriq
+                </Typography>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 4, fontWeight: 500, textAlign: 'center' }}>
+                    Secure Academic Operations Platform
+                </Typography>
+                <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
                     {success && <Alert severity="success">{success}</Alert>}
                     {error && <Alert severity="error">{error}</Alert>}
  

@@ -87,7 +87,7 @@ export default function Home() {
                                         fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.25rem' }
                                     }}
                                 >
-                                    Secure Academic Operations.<br />
+                                    Modern Academic Operations.<br />
                                     <Box component="span" sx={{ color: 'text.secondary' }}>Built for Universities.</Box>
                                 </Typography>
                             </motion.div>
@@ -103,7 +103,7 @@ export default function Home() {
                                         maxWidth: 520
                                     }}
                                 >
-                                    Acadence modernizes university examination departments with secure question banking, configurable peer-review workflows, and automated, outcomes-mapped paper generation.
+                                    Asteriq streamlines examination workflows through secure role-based governance, AI-assisted question creation, configurable approval workflows, and enterprise-grade academic automation.
                                 </Typography>
                             </motion.div>
                             
@@ -520,7 +520,7 @@ export default function Home() {
                             Provider-Independent AI
                         </Typography>
                         <Typography color="textSecondary" sx={{ mb: 4, lineHeight: 1.6 }}>
-                            Acadence utilizes a provider-independent architecture, separating application business logic from LLM services. 
+                            Asteriq utilizes a provider-independent architecture, separating application business logic from LLM services. 
                         </Typography>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -545,7 +545,7 @@ export default function Home() {
                             
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
                                 <Box sx={{ border: '1px solid #111', bgcolor: '#111', color: '#fff', px: 3, py: 1.5, borderRadius: 2, fontWeight: 600, width: '220px', fontSize: '0.85rem' }}>
-                                    Acadence Core Application
+                                    Asteriq Core Application
                                 </Box>
                                 <Typography sx={{ color: '#ccc', fontSize: '1rem', py: 0.25 }}>▼</Typography>
                                 <Box sx={{ border: '1px solid #ccc', bgcolor: '#fff', px: 3, py: 1.5, borderRadius: 2, fontWeight: 600, width: '220px', fontSize: '0.85rem' }}>
@@ -563,12 +563,12 @@ export default function Home() {
                 </Grid>
             </Container>
 
-            {/* WHY ACADENCE */}
+            {/* WHY ASTERIQ */}
             <Box sx={{ bgcolor: 'background.paper', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider', py: { xs: 10, md: 14 } }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: 'center', mb: 8 }}>
                         <Typography variant="h3" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
-                            Why Institutions Choose Acadence
+                            Why Institutions Choose Asteriq
                         </Typography>
                         <Typography variant="subtitle1" color="textSecondary">
                             Restoring accountability and structure to academic assessments.
@@ -625,7 +625,7 @@ export default function Home() {
                 <Container maxWidth="lg">
                     <Grid container spacing={6}>
                         <Grid size={{ xs: 12, md: 4 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>Acadence</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em', color: 'primary.main', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>ASTERIQ</Typography>
                             <Typography variant="body2" color="textSecondary" sx={{ maxWidth: 300, lineHeight: 1.6 }}>
                                 Academic Operations Platform designed for secure, auditable, and automated institutional evaluations.
                             </Typography>
@@ -641,7 +641,7 @@ export default function Home() {
                         <Grid size={{ xs: 6, md: 4 }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Contact & Community</Typography>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                <Typography variant="body2" color="textSecondary">support@acadence.com</Typography>
+                                <Typography variant="body2" color="textSecondary">support@asteriq.com</Typography>
                                 <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }}>GitHub Repository</Typography>
                                 <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }}>LinkedIn Profile</Typography>
                             </Box>
@@ -650,7 +650,7 @@ export default function Home() {
                     <Divider sx={{ my: 4 }} />
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
                         <Typography variant="caption" color="textSecondary">
-                            Acadence © {new Date().getFullYear()} — Academic Operations Platform.
+                            Asteriq © {new Date().getFullYear()} — Enterprise Academic Operations Platform.
                         </Typography>
                         <Typography variant="caption" color="textSecondary">
                             Engineered for high-trust academic institutions.

@@ -44,13 +44,14 @@ export default function Navbar() {
                     sx={{ 
                         flexGrow: 1, 
                         textDecoration: 'none', 
-                        color: 'text.primary', 
+                        color: 'primary.main', 
                         fontWeight: 800, 
                         letterSpacing: '-0.03em',
-                        fontSize: '1.25rem'
+                        fontSize: '1.25rem',
+                        fontFamily: 'Plus Jakarta Sans, sans-serif'
                     }}
                 >
-                    Acadence
+                    ASTERIQ
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                     {['SUPER_ADMIN', 'ADMIN'].includes(role) && (
