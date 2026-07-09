@@ -97,12 +97,8 @@ def has_subject_permission(user_id, subject_id, required_roles: list) -> bool:
     if has_perm:
         return True
         
-    # Legacy fallback: check legacy FacultySubject table (grants only FACULTY access tier context)
-    if s_uuid and ('FACULTY' in required_roles):
-        from ..models import FacultySubject
-        legacy = FacultySubject.query.filter_by(faculty_id=u_uuid, subject_id=s_uuid).first()
-        if legacy:
-            return True
+    # Legacy fallback removed for security: only context assignments govern permissions
+    pass
             
     return False
 

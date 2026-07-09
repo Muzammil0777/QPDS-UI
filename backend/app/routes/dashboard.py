@@ -50,11 +50,7 @@ def get_academic_dashboard():
         }
 
         # 1. FACULTY: Fetch assigned subjects
-        # We also check legacy fallback FacultySubject table
-        from ..models import FacultySubject
-        legacy_subs = FacultySubject.query.filter_by(faculty_id=u_uuid).all()
         fac_subject_ids = {a.subject_id for a in assignments if a.role_type == 'FACULTY' and a.subject_id}
-        fac_subject_ids.update({ls.subject_id for ls in legacy_subs if ls.subject_id})
 
         # Resolve subjects strictly from actual database mapping
         fac_subjects = Subject.query.filter(Subject.id.in_(fac_subject_ids)).all() if fac_subject_ids else []

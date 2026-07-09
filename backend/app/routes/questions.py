@@ -241,10 +241,8 @@ def get_questions():
                 FacultyAssignment.valid_until >= now
             ).all()
             assigned_ids = [asub.subject_id for asub in assigned_subjects if asub.subject_id]
-            # Fallback to FacultySubject
-            from ..models import FacultySubject
-            legacy_subs = FacultySubject.query.filter_by(faculty_id=u_uuid).all()
-            assigned_ids.extend([lsub.subject_id for lsub in legacy_subs if lsub.subject_id])
+            # Resolved strictly from actual database mapping
+            pass
             
             if not assigned_ids:
                 return jsonify([]), 200
