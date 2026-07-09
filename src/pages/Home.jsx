@@ -54,7 +54,7 @@ export default function Home() {
             <Container maxWidth="lg" sx={{ pt: { xs: 12, md: 20 }, pb: { xs: 8, md: 16 } }}>
                 <Grid container spacing={8} alignItems="center">
                     {/* Left: Heading and CTA */}
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <motion.div 
                             initial="hidden"
                             animate="visible"
@@ -140,7 +140,7 @@ export default function Home() {
                     </Grid>
                     
                     {/* Right: Mockup Interface */}
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -152,7 +152,7 @@ export default function Home() {
                                 bgcolor: '#ffffff', 
                                 boxShadow: '0 20px 40px rgba(0,0,0,0.03)',
                                 overflow: 'hidden',
-                                p: 3
+                                p: 3.5
                             }}>
                                 {/* Mockup Topbar */}
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -161,81 +161,59 @@ export default function Home() {
                                         <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ffbd2e' }} />
                                         <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#27c93f' }} />
                                     </Box>
-                                    <Chip label="ACADENCE OPERATIONAL CONTROL" size="small" variant="outlined" sx={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: 0.5, color: '#666666' }} />
+                                    <Chip label="LIVE QUESTION REVIEW TRACKER" size="small" variant="outlined" sx={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: 0.5, color: '#666666' }} />
                                 </Box>
 
-                                {/* Grid representing live workspace mockup modules */}
-                                <Grid container spacing={2}>
-                                    {/* Workflow Status */}
-                                    <Grid item xs={12}>
-                                        <Box sx={{ border: '1px solid #f0f0f0', borderRadius: 3, p: 2, bgcolor: '#fafafa' }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                                                <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#666' }}>ACTIVE QUESTION REVIEW WORKFLOW</Typography>
-                                                <Chip label="PENDING EXPERT REVIEW" color="warning" size="small" sx={{ fontSize: '0.6rem', height: 18, fontWeight: 700 }} />
-                                            </Box>
-                                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Explain the architectural tradeoffs of microservices vs monolithic applications.</Typography>
-                                            <Typography variant="caption" color="textSecondary">Course: CS101 • Creator: Prof. Amit Sharma • Reviewer: Dr. Sarah Jacob</Typography>
-                                        </Box>
-                                    </Grid>
+                                {/* Question Header Card */}
+                                <Box sx={{ border: '1px solid #e5e7eb', borderRadius: 3, p: 2, bgcolor: '#f8fafc', mb: 3 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'center' }}>
+                                        <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', fontSize: '0.7rem' }}>QUESTION ID: Q-9481</Typography>
+                                        <Chip label="IN ACTIVE WORKFLOW" size="small" color="primary" sx={{ height: 18, fontSize: '0.55rem', fontWeight: 700 }} />
+                                    </Box>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                        Explain the difference between TCP and UDP protocols, providing two use-cases for each.
+                                    </Typography>
+                                </Box>
 
-                                    {/* Stats */}
-                                    <Grid item xs={6}>
-                                        <Box sx={{ border: '1px solid #f0f0f0', borderRadius: 3, p: 2 }}>
-                                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#666', mb: 1 }}>QUESTION BANK HEALTH</Typography>
-                                            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                                                <Typography variant="h4" sx={{ fontWeight: 800 }}>412</Typography>
-                                                <Typography variant="caption" color="success.main" sx={{ fontWeight: 600 }}>+32 approved today</Typography>
+                                {/* Workflow Progress Steps */}
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    {[
+                                        { stage: 'Draft Created', role: 'Faculty (Drafting)', status: 'Completed', details: "Bloom's Level: UNDERSTAND | Difficulty: EASY", date: '10:04 AM' },
+                                        { stage: 'Editorial Verification', role: 'Subject Expert (Reviewing)', status: 'Completed', details: "Taxonomy validated & review comment log entry created", date: '11:15 AM' },
+                                        { stage: 'Department Endorsement', role: 'Department HOD (Approving)', status: 'Completed', details: "Approved & promoted to subject question bank", date: '12:30 PM' },
+                                        { stage: 'Secured Paper Composition', role: 'Controller of Examination', status: 'Active', details: "Assembled in B.Tech Midterm Exam Sheet - Hashing in progress...", date: 'In Progress' }
+                                    ].map((step, idx) => (
+                                        <Box key={idx} sx={{ display: 'flex', gap: 2 }}>
+                                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                <Box sx={{ 
+                                                    width: 22, 
+                                                    height: 22, 
+                                                    borderRadius: '50%', 
+                                                    border: '2px solid',
+                                                    borderColor: step.status === 'Completed' ? 'success.main' : 'primary.main',
+                                                    bgcolor: step.status === 'Completed' ? 'success.main' : '#ffffff',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: step.status === 'Completed' ? '#ffffff' : 'primary.main',
+                                                    fontSize: '11px',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    {step.status === 'Completed' ? '✓' : '●'}
+                                                </Box>
+                                                {idx < 3 && <Box sx={{ width: 2, flexGrow: 1, bgcolor: '#e5e7eb', minHeight: 18, mt: 0.5 }} />}
                                             </Box>
-                                            <Box sx={{ mt: 1.5 }}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                                    <Typography variant="caption" color="textSecondary">Approved Quota</Typography>
-                                                    <Typography variant="caption" sx={{ fontWeight: 600 }}>77%</Typography>
+                                            <Box sx={{ flexGrow: 1, pb: idx < 3 ? 0.5 : 0 }}>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 0.25 }}>
+                                                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>{step.stage}</Typography>
+                                                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>{step.date}</Typography>
                                                 </Box>
-                                                <LinearProgress variant="determinate" value={77} sx={{ height: 4, borderRadius: 2 }} />
-                                            </Box>
-                                        </Box>
-                                    </Grid>
-
-                                    {/* AI Assistant */}
-                                    <Grid item xs={6}>
-                                        <Box sx={{ border: '1px solid #f0f0f0', borderRadius: 3, p: 2 }}>
-                                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#666', mb: 1 }}>INTELLIGENT VALIDATION</Typography>
-                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Typography variant="caption" color="textSecondary">Bloom's Level</Typography>
-                                                    <Chip label="ANALYZE" size="small" variant="outlined" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 700, borderColor: '#111', color: '#111' }} />
-                                                </Box>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Typography variant="caption" color="textSecondary">Difficulty Rating</Typography>
-                                                    <Typography variant="caption" sx={{ fontWeight: 600 }}>MEDIUM (0.64)</Typography>
-                                                </Box>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Typography variant="caption" color="textSecondary">Duplicate Check</Typography>
-                                                    <Typography variant="caption" color="success.main" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                        <CheckCircleOutlineIcon sx={{ fontSize: 12 }} /> 0% match
-                                                    </Typography>
-                                                </Box>
+                                                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.25 }}>Role: {step.role}</Typography>
+                                                <Typography variant="caption" sx={{ color: step.status === 'Completed' ? 'text.secondary' : 'primary.main', fontWeight: step.status === 'Active' ? 600 : 400 }}>{step.details}</Typography>
                                             </Box>
                                         </Box>
-                                    </Grid>
-
-                                    {/* Audit trail snippet */}
-                                    <Grid item xs={12}>
-                                        <Box sx={{ border: '1px solid #f0f0f0', borderRadius: 3, p: 2, bgcolor: '#fafafa' }}>
-                                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#666', mb: 1 }}>COMPLIANCE AUDIT FEED</Typography>
-                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                    <Typography variant="caption" sx={{ fontWeight: 500 }}>Keypair generated for B.Tech Endsem Paper export</Typography>
-                                                    <Typography variant="caption" color="textSecondary">14:32:04</Typography>
-                                                </Box>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                    <Typography variant="caption" sx={{ fontWeight: 500 }}>HOD CSE approved blueprint for midterm</Typography>
-                                                    <Typography variant="caption" color="textSecondary">12:11:45</Typography>
-                                                </Box>
-                                            </Box>
-                                        </Box>
-                                    </Grid>
-                                </Grid>
+                                    ))}
+                                </Box>
                             </Box>
                         </motion.div>
                     </Grid>
@@ -253,12 +231,12 @@ export default function Home() {
                             { value: 'Time-Bound', label: 'Security Windows' },
                             { value: 'Multi-Stage', label: 'Approval Workflows' }
                         ].map((metric, idx) => (
-                            <Grid item xs={6} md={2.4} key={idx}>
+                            <Grid size={{ xs: 6, md: 2.4 }} key={idx}>
                                 <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h4" sx={{ fontWeight: 800, color: '#111', mb: 0.5 }}>
+                                    <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', mb: 0.5 }}>
                                         {metric.value}
                                     </Typography>
-                                    <Typography variant="caption" sx={{ color: '#666', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                         {metric.label}
                                     </Typography>
                                 </Box>
@@ -294,7 +272,7 @@ export default function Home() {
                         { icon: <LockOutlinedIcon />, title: 'Provider-Independent AI', desc: 'Adapt adapters to run on Hugging Face, Gemini, or local on-premise servers.' },
                         { icon: <TimelineOutlinedIcon />, title: 'Time-Bound Assignments', desc: 'Set temporary roles and delegation mappings that expire automatically.' }
                     ].map((cap, idx) => (
-                        <Grid item xs={12} sm={6} md={4} key={idx}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
                             <motion.div
                                 whileHover={{ y: -4 }}
                                 transition={{ duration: 0.2 }}
@@ -303,14 +281,15 @@ export default function Home() {
                                 <Card variant="outlined" sx={{ 
                                     height: '100%', 
                                     borderRadius: 3.5, 
-                                    border: '1px solid #eaeaea',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
                                     transition: 'border-color 0.2s',
                                     '&:hover': {
-                                        borderColor: '#b5b5b5'
+                                        borderColor: 'text.secondary'
                                     }
                                 }}>
                                     <CardContent sx={{ p: 4 }}>
-                                        <Box sx={{ bgcolor: '#fafafa', p: 1.25, borderRadius: 2, display: 'inline-flex', mb: 2, color: '#111' }}>
+                                        <Box sx={{ bgcolor: 'background.paper', p: 1.25, borderRadius: 2, display: 'inline-flex', mb: 2, color: 'text.primary' }}>
                                             {cap.icon}
                                         </Box>
                                         <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, letterSpacing: '-0.01em' }}>
@@ -328,7 +307,7 @@ export default function Home() {
             </Container>
 
             {/* VISUAL WORKFLOW SECTION */}
-            <Box sx={{ bgcolor: '#fafafa', borderTop: '1px solid #eaeaea', borderBottom: '1px solid #eaeaea', py: { xs: 10, md: 14 } }}>
+            <Box sx={{ bgcolor: 'background.paper', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider', py: { xs: 10, md: 14 } }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: 'center', mb: 8 }}>
                         <Typography variant="h3" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
@@ -347,10 +326,11 @@ export default function Home() {
                             { step: '04', title: 'COE Blueprinting', desc: 'Defines paper criteria, blueprints, and taxonomy weights.' },
                             { step: '05', title: 'Secure Composition', desc: 'Assembles papers and generates tamper-proof packages.' }
                         ].map((wf, idx) => (
-                            <Grid item xs={12} md={2.4} key={idx} sx={{ display: 'flex' }}>
+                            <Grid size={{ xs: 12, md: 2.4 }} key={idx} sx={{ display: 'flex' }}>
                                 <Box sx={{ 
-                                    border: '1px solid #eaeaea', 
-                                    bgcolor: '#fff', 
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    bgcolor: 'background.default', 
                                     borderRadius: 3.5, 
                                     p: 3, 
                                     width: '100%',
@@ -402,15 +382,15 @@ export default function Home() {
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {/* Faculty Workspace */}
                     <Grid container spacing={6} alignItems="center">
-                        <Grid item xs={12} md={6}>
-                            <Box sx={{ border: '1px solid #eaeaea', borderRadius: 4, p: 3, bgcolor: '#ffffff', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3, bgcolor: 'background.default', boxShadow: '0 10px 30px rgba(0,0,0,0.01)' }}>
                                 <Box sx={{ display: 'flex', gap: 1.5, mb: 2, alignItems: 'center' }}>
-                                    <Avatar sx={{ bgcolor: '#fafafa', color: '#111', width: 32, height: 32, fontSize: '0.85rem', border: '1px solid #eee' }}>F</Avatar>
+                                    <Avatar sx={{ bgcolor: 'background.paper', color: 'text.primary', width: 32, height: 32, fontSize: '0.85rem', border: '1px solid', borderColor: 'divider' }}>F</Avatar>
                                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Faculty Drafting Board</Typography>
                                 </Box>
                                 <Divider sx={{ mb: 2 }} />
-                                <Typography sx={{ fontSize: '0.85rem', color: '#666', mb: 1 }}>Question Content:</Typography>
-                                <Box sx={{ p: 2, border: '1px dashed #ccc', borderRadius: 2, bgcolor: '#fafafa', mb: 2 }}>
+                                <Typography sx={{ fontSize: '0.85rem', color: 'text.secondary', mb: 1 }}>Question Content:</Typography>
+                                <Box sx={{ p: 2, border: '1px dashed', borderColor: 'divider', borderRadius: 2, bgcolor: 'background.paper', mb: 2 }}>
                                     <Typography variant="body2" sx={{ fontWeight: 500 }}>Explain the difference between TCP and UDP protocols.</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -420,39 +400,43 @@ export default function Home() {
                                 </Box>
                             </Box>
                         </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
-                                Faculty Drafting Workspace
-                            </Typography>
-                            <Typography color="textSecondary" sx={{ lineHeight: 1.6, mb: 4 }}>
-                                Faculty can construct questions manually or trigger automated drafting suggestions. The system handles duplicate detection, maps course outcomes, and logs revisions instantly.
-                            </Typography>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', pl: { md: 4 } }}>
+                                <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
+                                    Faculty Drafting Workspace
+                                </Typography>
+                                <Typography color="textSecondary" sx={{ lineHeight: 1.6 }}>
+                                    Faculty can construct questions manually or trigger automated drafting suggestions. The system handles duplicate detection, maps course outcomes, and logs revisions instantly.
+                                </Typography>
+                            </Box>
                         </Grid>
                     </Grid>
 
                     {/* Subject Expert Workspace */}
                     <Grid container spacing={6} alignItems="center" direction={{ xs: 'column-reverse', md: 'row' }}>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
-                                Subject Expert Reviews
-                            </Typography>
-                            <Typography color="textSecondary" sx={{ lineHeight: 1.6, mb: 4 }}>
-                                Assigned reviewers evaluate question blueprints, verify the difficulty coefficients, validate taxonomy standards, and leave audit suggestions or approve the drafts.
-                            </Typography>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', pr: { md: 4 } }}>
+                                <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
+                                    Subject Expert Reviews
+                                </Typography>
+                                <Typography color="textSecondary" sx={{ lineHeight: 1.6 }}>
+                                    Assigned reviewers evaluate question blueprints, verify the difficulty coefficients, validate taxonomy standards, and leave audit suggestions or approve the drafts.
+                                </Typography>
+                            </Box>
                         </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Box sx={{ border: '1px solid #eaeaea', borderRadius: 4, p: 3, bgcolor: '#ffffff', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3, bgcolor: 'background.default', boxShadow: '0 10px 30px rgba(0,0,0,0.01)' }}>
                                 <Box sx={{ display: 'flex', gap: 1.5, mb: 2, alignItems: 'center' }}>
-                                    <Avatar sx={{ bgcolor: '#fafafa', color: '#111', width: 32, height: 32, fontSize: '0.85rem', border: '1px solid #eee' }}>E</Avatar>
+                                    <Avatar sx={{ bgcolor: 'background.paper', color: 'text.primary', width: 32, height: 32, fontSize: '0.85rem', border: '1px solid', borderColor: 'divider' }}>E</Avatar>
                                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Peer Evaluation Queue</Typography>
                                 </Box>
                                 <Divider sx={{ mb: 2 }} />
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                                    <Box sx={{ border: '1px solid #f0f0f0', p: 1.5, borderRadius: 2 }}>
+                                    <Box sx={{ border: '1px solid', borderColor: 'divider', p: 1.5, borderRadius: 2 }}>
                                         <Typography variant="body2" sx={{ fontWeight: 500 }}>Is the taxonomy correct for CS101?</Typography>
                                         <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                                            <Button size="small" variant="contained" sx={{ bgcolor: '#111', color: '#fff', fontSize: '0.75rem', py: 0.25, '&:hover': { bgcolor: '#333' } }}>Approve</Button>
-                                            <Button size="small" variant="outlined" sx={{ fontSize: '0.75rem', py: 0.25, color: '#111', borderColor: '#ccc' }}>Reject</Button>
+                                            <Button size="small" variant="contained" color="primary">Approve</Button>
+                                            <Button size="small" variant="outlined" color="secondary">Reject</Button>
                                         </Box>
                                     </Box>
                                 </Box>
@@ -462,15 +446,15 @@ export default function Home() {
 
                     {/* HOD Workspace */}
                     <Grid container spacing={6} alignItems="center">
-                        <Grid item xs={12} md={6}>
-                            <Box sx={{ border: '1px solid #eaeaea', borderRadius: 4, p: 3, bgcolor: '#ffffff', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3, bgcolor: 'background.default', boxShadow: '0 10px 30px rgba(0,0,0,0.01)' }}>
                                 <Box sx={{ display: 'flex', gap: 1.5, mb: 2, alignItems: 'center' }}>
-                                    <Avatar sx={{ bgcolor: '#fafafa', color: '#111', width: 32, height: 32, fontSize: '0.85rem', border: '1px solid #eee' }}>H</Avatar>
+                                    <Avatar sx={{ bgcolor: 'background.paper', color: 'text.primary', width: 32, height: 32, fontSize: '0.85rem', border: '1px solid', borderColor: 'divider' }}>H</Avatar>
                                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Department Assignment Board</Typography>
                                 </Box>
                                 <Divider sx={{ mb: 2 }} />
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, borderBottom: '1px solid #f0f0f0' }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
                                         <Typography variant="body2">Faculty: Dr. Sarah Jacob</Typography>
                                         <Chip label="SUBJECT_EXPERT (CS101)" size="small" />
                                     </Box>
@@ -481,20 +465,22 @@ export default function Home() {
                                 </Box>
                             </Box>
                         </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
-                                Department Governance (HOD)
-                            </Typography>
-                            <Typography color="textSecondary" sx={{ lineHeight: 1.6, mb: 4 }}>
-                                HODs monitor course progress, map subjects to specific educators, and manage workload requirements across semesters with zero operational friction.
-                            </Typography>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', pl: { md: 4 } }}>
+                                <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
+                                    Department Governance (HOD)
+                                </Typography>
+                                <Typography color="textSecondary" sx={{ lineHeight: 1.6 }}>
+                                    HODs monitor course progress, map subjects to specific educators, and manage workload requirements across semesters with zero operational friction.
+                                </Typography>
+                            </Box>
                         </Grid>
                     </Grid>
                 </Box>
             </Container>
 
             {/* SECURITY & GOVERNANCE SECTION */}
-            <Box sx={{ bgcolor: '#fafafa', borderTop: '1px solid #eaeaea', borderBottom: '1px solid #eaeaea', py: { xs: 10, md: 14 } }}>
+            <Box sx={{ bgcolor: 'background.paper', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider', py: { xs: 10, md: 14 } }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: 'center', mb: 8 }}>
                         <Typography variant="h3" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
@@ -504,7 +490,7 @@ export default function Home() {
                             Designed to meet mission-critical evaluation requirements.
                         </Typography>
                     </Box>
-
+ 
                     <Grid container spacing={3}>
                         {[
                             { title: 'Role-Based Access Control', desc: 'Enforces explicit system-level and contextual mappings for all users.' },
@@ -515,9 +501,9 @@ export default function Home() {
                             { title: 'Secure Authentication', desc: 'Decodes claims securely using robust JWT tokens and configurable settings.' },
                             { title: 'Configuration Driven Policies', desc: 'Control domain bounds and departmental configurations via a centralized panel.' }
                         ].map((sec, idx) => (
-                            <Grid item xs={12} sm={6} md={4} key={idx}>
-                                <Box sx={{ p: 3, border: '1px solid #eaeaea', bgcolor: '#fff', borderRadius: 3.5, height: '100%' }}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: '#111' }}>{sec.title}</Typography>
+                            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
+                                <Box sx={{ p: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.default', borderRadius: 3.5, height: '100%' }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>{sec.title}</Typography>
                                     <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.5 }}>{sec.desc}</Typography>
                                 </Box>
                             </Grid>
@@ -525,11 +511,11 @@ export default function Home() {
                     </Grid>
                 </Container>
             </Box>
-
+ 
             {/* AI SERVICE SECTION */}
             <Container maxWidth="lg" sx={{ py: { xs: 10, md: 16 } }}>
                 <Grid container spacing={8} alignItems="center">
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Typography variant="h3" sx={{ fontWeight: 800, mb: 3, letterSpacing: '-0.02em' }}>
                             Provider-Independent AI
                         </Typography>
@@ -538,23 +524,23 @@ export default function Home() {
                         </Typography>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#111' }} />
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main' }} />
                                 <Typography variant="body2" sx={{ fontWeight: 600 }}>Generate draft questions based on course syllabus inputs.</Typography>
                             </Box>
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#111' }} />
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main' }} />
                                 <Typography variant="body2" sx={{ fontWeight: 600 }}>Estimate difficulty metrics to maintain balanced tests.</Typography>
                             </Box>
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#111' }} />
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main' }} />
                                 <Typography variant="body2" sx={{ fontWeight: 600 }}>Run duplicate verification checking past semester banks.</Typography>
                             </Box>
                         </Box>
                     </Grid>
-
+ 
                     {/* Architecture Diagram */}
-                    <Grid item xs={12} md={6}>
-                        <Box sx={{ border: '1px solid #eaeaea', borderRadius: 4, p: 4, bgcolor: '#fafafa', textAlign: 'center' }}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 4, bgcolor: 'background.paper', textAlign: 'center' }}>
                             <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#666', mb: 4 }}>INTELLIGENT INTEGRATION ARCHITECTURE</Typography>
                             
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
@@ -578,7 +564,7 @@ export default function Home() {
             </Container>
 
             {/* WHY ACADENCE */}
-            <Box sx={{ bgcolor: '#fafafa', borderTop: '1px solid #eaeaea', borderBottom: '1px solid #eaeaea', py: { xs: 10, md: 14 } }}>
+            <Box sx={{ bgcolor: 'background.paper', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider', py: { xs: 10, md: 14 } }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: 'center', mb: 8 }}>
                         <Typography variant="h3" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
@@ -596,8 +582,8 @@ export default function Home() {
                             { problem: 'Zero edit tracking', solution: 'Immutable version control on every question modification.' },
                             { problem: 'Disconnected systems', solution: 'A single, unified platform for faculty, reviewers, and administrators.' }
                         ].map((item, idx) => (
-                            <Grid item xs={12} md={6} key={idx}>
-                                <Box sx={{ p: 4, border: '1px solid #eaeaea', bgcolor: '#fff', borderRadius: 4 }}>
+                            <Grid size={{ xs: 12, md: 6 }} key={idx}>
+                                <Box sx={{ p: 4, border: '1px solid', borderColor: 'divider', bgcolor: 'background.default', borderRadius: 4 }}>
                                     <Typography variant="subtitle1" sx={{ color: 'error.main', fontWeight: 700, mb: 1 }}>
                                         ✕ {item.problem}
                                     </Typography>
@@ -613,7 +599,7 @@ export default function Home() {
 
             {/* FINAL CTA */}
             <Container maxWidth="md" sx={{ py: { xs: 10, md: 16 }, textAlign: 'center' }}>
-                <Typography variant="h2" sx={{ fontWeight: 900, mb: 3, letterSpacing: '-0.03em' }}>
+                <Typography variant="h2" sx={{ fontWeight: 800, mb: 3, letterSpacing: '-0.03em' }}>
                     Elevate Your Academic Operations.
                 </Typography>
                 <Typography color="textSecondary" sx={{ mb: 6, maxWidth: 550, mx: 'auto', lineHeight: 1.6 }}>
@@ -635,29 +621,29 @@ export default function Home() {
             </Container>
 
             {/* ENTERPRISE FOOTER */}
-            <Box sx={{ borderTop: '1px solid #eaeaea', py: 8, bgcolor: '#ffffff' }}>
+            <Box sx={{ borderTop: '1px solid', borderColor: 'divider', py: 8, bgcolor: 'background.default' }}>
                 <Container maxWidth="lg">
                     <Grid container spacing={6}>
-                        <Grid item xs={12} md={4}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                             <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>Acadence</Typography>
                             <Typography variant="body2" color="textSecondary" sx={{ maxWidth: 300, lineHeight: 1.6 }}>
                                 Academic Operations Platform designed for secure, auditable, and automated institutional evaluations.
                             </Typography>
                         </Grid>
-                        <Grid item xs={6} md={4}>
+                        <Grid size={{ xs: 6, md: 4 }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Resources</Typography>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: '#000' } }} onClick={() => navigate('/about')}>Documentation</Typography>
-                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: '#000' } }}>Terms & Conditions</Typography>
-                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: '#000' } }}>Privacy Policy</Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }} onClick={() => navigate('/about')}>Documentation</Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }}>Terms & Conditions</Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }}>Privacy Policy</Typography>
                             </Box>
                         </Grid>
-                        <Grid item xs={6} md={4}>
+                        <Grid size={{ xs: 6, md: 4 }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Contact & Community</Typography>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                 <Typography variant="body2" color="textSecondary">support@acadence.com</Typography>
-                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: '#000' } }}>GitHub Repository</Typography>
-                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: '#000' } }}>LinkedIn Profile</Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }}>GitHub Repository</Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }}>LinkedIn Profile</Typography>
                             </Box>
                         </Grid>
                     </Grid>
