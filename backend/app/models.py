@@ -103,15 +103,24 @@ class FacultyAssignment(db.Model):
         return {
             "id": str(self.id),
             "userId": str(self.user_id),
+            "user_id": str(self.user_id),
             "subjectId": str(self.subject_id) if self.subject_id else None,
+            "subject_id": str(self.subject_id) if self.subject_id else None,
             "department": self.department,
             "roleType": self.role_type,
+            "role_type": self.role_type,
             "validFrom": self.valid_from.isoformat(),
+            "valid_from": self.valid_from.isoformat(),
             "validUntil": self.valid_until.isoformat(),
+            "valid_until": self.valid_until.isoformat(),
             "delegatedFromUserId": str(self.delegated_from_user_id) if self.delegated_from_user_id else None,
+            "delegated_from_user_id": str(self.delegated_from_user_id) if self.delegated_from_user_id else None,
             "assignedBy": str(self.assigned_by),
+            "assigned_by": str(self.assigned_by),
             "assignedAt": self.assigned_at.isoformat(),
-            "isActive": self.is_active
+            "assigned_at": self.assigned_at.isoformat(),
+            "isActive": self.is_active,
+            "is_active": self.is_active
         }
 
 class FacultySubject(db.Model):
