@@ -98,4 +98,55 @@ def create_app(config_class=Config):
     def health():
         return {'status': 'ok'}
 
+    # Run database integrity check and auto-healing for orphaned questions on startup
+    heal_database(app)
+
     return app
+
+
+def heal_database(app):
+    with app.app_context():
+        from .models import Question, Subject, db
+        try:
+            questions = Question.query.all()
+            subjects = Subject.query.all()
+            subject_map = {s.id: s for s in subjects}
+            
+            # Map subjects by (code, semester, academic_year) for lookup
+            subject_lookup = {}
+            for s in subjects:
+                sem_number = s.semester.number if s.semester else None
+                ay_label = s.academic_year.label if s.academic_year else None
+                if sem_number and ay_label:
+                    key = (s.code, sem_number, ay_label)
+                    subject_lookup[key] = s
+                
+            healed_count = 0
+            for q in questions:
+                if q.subject_id not in subject_map:
+                    # Orphaned question found! Match via meta in editor_data
+                    meta = q.editor_data.get('meta', {}) if q.editor_data else {}
+                    subcode = meta.get('subcode')
+                    semester = meta.get('semester')
+                    academic_year = meta.get('academicYear')
+                    
+                    if subcode and semester and academic_year:
+                        try:
+                            sem_int = int(semester)
+                        except (ValueError, TypeError):
+                            continue
+                        key = (subcode, sem_int, academic_year)
+                        if key in subject_lookup:
+                            target_subject = subject_lookup[key]
+                            q.subject_id = target_subject.id
+                            healed_count += 1
+                            app.logger.info(f"Auto-healed question {q.id}: mapped to subject {subcode} ({target_subject.id})")
+                            
+            if healed_count > 0:
+                db.session.commit()
+                app.logger.info(f"Database integrity check: auto-healed {healed_count} questions.")
+            else:
+                app.logger.info("Database integrity check: No orphaned questions found.")
+        except Exception as e:
+            app.logger.error(f"Error during database integrity check: {e}")
+

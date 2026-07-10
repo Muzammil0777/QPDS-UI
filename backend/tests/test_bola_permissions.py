@@ -1,7 +1,7 @@
-import pytest
-from app.models import User, Subject, AcademicYear, Semester, FacultySubject, Question, Paper, Section, db
+from app.models import User, Subject, AcademicYear, Semester, FacultyAssignment, Question, Paper, Section, db
 from app.routes.auth import bcrypt
 from flask_jwt_extended import create_access_token
+from datetime import datetime, timedelta
 
 def test_bola_permissions(client, app):
     # Setup data
@@ -29,8 +29,20 @@ def test_bola_permissions(client, app):
         db.session.flush()
 
         # 4. Assignments (Fac A -> Sub A, Fac B -> Sub B)
-        assign_a = FacultySubject(faculty_id=fac_a.id, subject_id=sub_a.id, assigned_by=admin.id)
-        assign_b = FacultySubject(faculty_id=fac_b.id, subject_id=sub_b.id, assigned_by=admin.id)
+        assign_a = FacultyAssignment(
+            user_id=fac_a.id,
+            subject_id=sub_a.id,
+            role_type='FACULTY',
+            valid_until=datetime.utcnow() + timedelta(days=365),
+            assigned_by=admin.id
+        )
+        assign_b = FacultyAssignment(
+            user_id=fac_b.id,
+            subject_id=sub_b.id,
+            role_type='FACULTY',
+            valid_until=datetime.utcnow() + timedelta(days=365),
+            assigned_by=admin.id
+        )
         db.session.add_all([assign_a, assign_b])
         db.session.flush()
 

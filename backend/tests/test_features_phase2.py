@@ -1,7 +1,7 @@
-import pytest
-from app.models import User, Subject, AcademicYear, Semester, FacultySubject, Question, Paper, Section, PaperQuestion, CourseOutcome, db
+from app.models import User, Subject, AcademicYear, Semester, FacultyAssignment, Question, Paper, Section, PaperQuestion, CourseOutcome, db
 from app.routes.auth import bcrypt
 from flask_jwt_extended import create_access_token
+from datetime import datetime, timedelta
 
 def test_features_phase2(client, app):
     """Tests LaTeX export endpoint and permission enforcement."""
@@ -29,7 +29,13 @@ def test_features_phase2(client, app):
         db.session.flush()
 
         # Assignment
-        assign = FacultySubject(faculty_id=fac.id, subject_id=sub.id, assigned_by=fac.id)
+        assign = FacultyAssignment(
+            user_id=fac.id,
+            subject_id=sub.id,
+            role_type='FACULTY',
+            valid_until=datetime.utcnow() + timedelta(days=365),
+            assigned_by=fac.id
+        )
         db.session.add(assign)
         db.session.flush()
 

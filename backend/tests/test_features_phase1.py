@@ -1,7 +1,7 @@
-import pytest
-from app.models import User, Subject, AcademicYear, Semester, FacultySubject, Question, Paper, db
+from app.models import User, Subject, AcademicYear, Semester, FacultyAssignment, Question, Paper, db
 from app.routes.auth import bcrypt
 from flask_jwt_extended import create_access_token
+from datetime import datetime, timedelta
 
 def test_features_phase1(client, app):
     # Setup Data
@@ -26,7 +26,13 @@ def test_features_phase1(client, app):
         db.session.flush()
 
         # 4. Assignment
-        assign = FacultySubject(faculty_id=fac_a.id, subject_id=sub.id, assigned_by=fac_a.id)
+        assign = FacultyAssignment(
+            user_id=fac_a.id,
+            subject_id=sub.id,
+            role_type='FACULTY',
+            valid_until=datetime.utcnow() + timedelta(days=365),
+            assigned_by=fac_a.id
+        )
         db.session.add(assign)
         db.session.flush()
 

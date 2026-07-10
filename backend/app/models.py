@@ -171,11 +171,22 @@ class Question(db.Model):
     reviewer = db.relationship('User', foreign_keys=[reviewed_by], backref='reviewed_questions')
 
     def to_dict(self):
+        sub_code = self.subject.code if self.subject else None
+        ay_label = self.subject.academic_year.label if self.subject and self.subject.academic_year else None
+        sem_num = self.subject.semester.number if self.subject and self.subject.semester else None
+        
+        # Fallback to editor_data meta if subject relationship is missing/orphaned
+        if not sub_code and self.editor_data and isinstance(self.editor_data, dict):
+            meta = self.editor_data.get('meta', {})
+            sub_code = meta.get('subcode')
+            ay_label = meta.get('academicYear')
+            sem_num = meta.get('semester')
+
         return {
             "id": str(self.id),
-            "subcode": self.subject.code,
-            "academicYear": self.subject.academic_year.label,
-            "semester": self.subject.semester.number,
+            "subcode": sub_code,
+            "academicYear": ay_label,
+            "semester": sem_num,
             "courseOutcomeId": str(self.course_outcome_id) if self.course_outcome_id else None,
             "coCode": self.course_outcome.co_code if self.course_outcome else None,
             "creatorId": str(self.creator_id) if self.creator_id else None,
