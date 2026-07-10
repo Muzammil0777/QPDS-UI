@@ -272,7 +272,7 @@ export default function AdminDashboard() {
                             </Typography>
                             <Divider sx={{ my: 1.5 }} />
                             <Grid container spacing={2}>
-                                <Grid item xs={6}>
+                                <Grid item xs={12}>
                                     <Button 
                                         fullWidth 
                                         variant="outlined" 
@@ -281,17 +281,6 @@ export default function AdminDashboard() {
                                         sx={{ textTransform: 'none', fontWeight: 600 }}
                                     >
                                         Register Faculty
-                                    </Button>
-                                </Grid>
-                                <Grid item xs={6}>
-                                    <Button 
-                                        fullWidth 
-                                        variant="outlined" 
-                                        size="small" 
-                                        onClick={() => navigate('/admin/assign')}
-                                        sx={{ textTransform: 'none', fontWeight: 600 }}
-                                    >
-                                        Map Course Role
                                     </Button>
                                 </Grid>
                             </Grid>

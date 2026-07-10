@@ -15,7 +15,6 @@ import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/admin/Dashboard';
 import FacultyManagement from './pages/admin/FacultyManagement';
 import SubjectManagement from './pages/admin/SubjectManagement';
-import AssignSubjects from './pages/admin/AssignSubjects';
 import CourseOutcomes from './pages/admin/CourseOutcomes';
 import QuestionPaper from './pages/admin/QuestionPaper';
 import QuestionBank from './pages/admin/QuestionBank';
@@ -49,7 +48,6 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="faculty" element={<FacultyManagement />} />
           <Route path="subjects" element={<SubjectManagement />} />
-          <Route path="assign" element={<AssignSubjects />} />
           <Route path="course-outcomes" element={<CourseOutcomes />} />
           <Route path="question-paper" element={<QuestionPaper />} />
           <Route path="question-bank" element={<QuestionBank />} />

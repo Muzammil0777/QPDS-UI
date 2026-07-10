@@ -31,7 +31,6 @@ export default function Sidebar() {
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin' },
         { text: 'Faculty Management', icon: <PeopleIcon />, path: '/admin/faculty' },
         { text: 'Subject Management', icon: <SubjectIcon />, path: '/admin/subjects' },
-        { text: 'Assign Subjects', icon: <AssignmentIndIcon />, path: '/admin/assign' },
         { text: 'Course Outcomes', icon: <SchoolIcon />, path: '/admin/course-outcomes' },
         { text: 'Question Paper', icon: <ArticleIcon />, path: '/admin/question-paper' },
         { text: 'Question Bank', icon: <SubjectIcon />, path: '/admin/question-bank' },
