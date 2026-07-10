@@ -61,6 +61,9 @@ class HuggingFaceProvider(AIProvider):
         return generated_text.strip()
 
     def get_embeddings(self, texts: list) -> list:
+        if not self.api_key or not self.api_key.strip():
+            return [[0.0] * 384 for _ in texts]
+
         try:
             from app.routes.ai import InferenceClient
         except ImportError:
@@ -70,15 +73,26 @@ class HuggingFaceProvider(AIProvider):
         client = InferenceClient(model=model_id, token=self.api_key)
         
         embeddings = []
+        api_failed = False
+        
         for text in texts:
+            if api_failed:
+                embeddings.append([0.0] * 384)
+                continue
+                
             try:
                 emb = client.feature_extraction(text)
-                # Normalize structure
                 if len(emb) == 1 and isinstance(emb[0], list):
                     emb = emb[0]
                 embeddings.append(emb)
-            except Exception:
-                time.sleep(1)
+            except Exception as e:
+                err_str = str(e).lower()
+                if "401" in err_str or "unauthorized" in err_str or "expired" in err_str:
+                    print(f"HuggingFace API unauthorized or expired: {e}. Failing fast.")
+                    api_failed = True
+                    embeddings.append([0.0] * 384)
+                    continue
+                
                 try:
                     emb = client.feature_extraction(text)
                     if len(emb) == 1 and isinstance(emb[0], list):
