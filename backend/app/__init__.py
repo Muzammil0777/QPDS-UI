@@ -130,17 +130,28 @@ def heal_database(app):
                     semester = meta.get('semester')
                     academic_year = meta.get('academicYear')
                     
+                    healed = False
                     if subcode and semester and academic_year:
                         try:
                             sem_int = int(semester)
                         except (ValueError, TypeError):
-                            continue
-                        key = (subcode, sem_int, academic_year)
-                        if key in subject_lookup:
-                            target_subject = subject_lookup[key]
-                            q.subject_id = target_subject.id
+                            sem_int = None
+                        if sem_int is not None:
+                            key = (subcode, sem_int, academic_year)
+                            if key in subject_lookup:
+                                target_subject = subject_lookup[key]
+                                q.subject_id = target_subject.id
+                                healed = True
+                                healed_count += 1
+                                app.logger.info(f"Auto-healed question {q.id}: mapped to subject {subcode} ({target_subject.id})")
+                                
+                    if not healed and subcode:
+                        # Fallback to matching by code alone
+                        fallback_subject = next((s for s in subjects if s.code == subcode), None)
+                        if fallback_subject:
+                            q.subject_id = fallback_subject.id
                             healed_count += 1
-                            app.logger.info(f"Auto-healed question {q.id}: mapped to subject {subcode} ({target_subject.id})")
+                            app.logger.info(f"Auto-healed question {q.id} (fallback): mapped to subject {subcode} ({fallback_subject.id})")
                             
             if healed_count > 0:
                 db.session.commit()
