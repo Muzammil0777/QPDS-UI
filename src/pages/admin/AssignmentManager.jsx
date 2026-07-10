@@ -356,25 +356,23 @@ export default function AssignmentManager() {
                     {editingAssignment ? 'Modify Assignment Window' : 'Assign Contextual Role'}
                 </DialogTitle>
                 <DialogContent dividers>
-                    <Grid container spacing={3} sx={{ mt: 0.5 }}>
-                        <Grid item xs={12}>
-                            <TextField
-                                select
-                                label="Academic User"
-                                name="userId"
-                                value={formData.userId}
-                                onChange={handleFormChange}
-                                disabled={!!editingAssignment}
-                                fullWidth
-                                required
-                            >
-                                {facultyList.map((f) => (
-                                    <MenuItem key={f.id} value={f.id}>{f.name} ({f.email})</MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
+                        <TextField
+                            select
+                            label="Academic User"
+                            name="userId"
+                            value={formData.userId}
+                            onChange={handleFormChange}
+                            disabled={!!editingAssignment}
+                            fullWidth
+                            required
+                        >
+                            {facultyList.map((f) => (
+                                <MenuItem key={f.id} value={f.id}>{f.name} ({f.email})</MenuItem>
+                            ))}
+                        </TextField>
 
-                        <Grid item xs={12} sm={6}>
+                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2.5 }}>
                             <TextField
                                 select
                                 label="Contextual Role Type"
@@ -389,9 +387,7 @@ export default function AssignmentManager() {
                                     <MenuItem key={r} value={r}>{r}</MenuItem>
                                 ))}
                             </TextField>
-                        </Grid>
 
-                        <Grid item xs={12} sm={6}>
                             <TextField
                                 select
                                 label="Scope Context"
@@ -405,49 +401,45 @@ export default function AssignmentManager() {
                                 <MenuItem value="SUBJECT">Subject-bound</MenuItem>
                                 <MenuItem value="DEPARTMENT">Department-wide</MenuItem>
                             </TextField>
-                        </Grid>
+                        </Box>
 
                         {formData.contextType === 'SUBJECT' ? (
-                            <Grid item xs={12}>
-                                <TextField
-                                    select
-                                    label="Target Subject"
-                                    name="subjectId"
-                                    value={formData.subjectId}
-                                    onChange={handleFormChange}
-                                    disabled={!!editingAssignment}
-                                    fullWidth
-                                    required
-                                >
-                                    {subjectList.map((sub) => (
-                                        <MenuItem key={sub.id} value={sub.id}>{sub.code} - {sub.name}</MenuItem>
-                                    ))}
-                                </TextField>
-                            </Grid>
+                            <TextField
+                                select
+                                label="Target Subject"
+                                name="subjectId"
+                                value={formData.subjectId}
+                                onChange={handleFormChange}
+                                disabled={!!editingAssignment}
+                                fullWidth
+                                required
+                            >
+                                {subjectList.map((sub) => (
+                                    <MenuItem key={sub.id} value={sub.id}>{sub.code} - {sub.name}</MenuItem>
+                                ))}
+                            </TextField>
                         ) : (
-                            <Grid item xs={12}>
-                                <TextField
-                                    select
-                                    label="Target Department"
-                                    name="department"
-                                    value={formData.department}
-                                    onChange={handleFormChange}
-                                    disabled={!!editingAssignment}
-                                    fullWidth
-                                    required
-                                >
-                                    {deptList.length === 0 ? (
-                                        <MenuItem value="">-- Configure departments in System Settings first --</MenuItem>
-                                    ) : (
-                                        deptList.map((dept) => (
-                                            <MenuItem key={dept} value={dept}>{dept}</MenuItem>
-                                        ))
-                                    )}
-                                </TextField>
-                            </Grid>
+                            <TextField
+                                select
+                                label="Target Department"
+                                name="department"
+                                value={formData.department}
+                                onChange={handleFormChange}
+                                disabled={!!editingAssignment}
+                                fullWidth
+                                required
+                            >
+                                {deptList.length === 0 ? (
+                                    <MenuItem value="">-- Configure departments in System Settings first --</MenuItem>
+                                ) : (
+                                    deptList.map((dept) => (
+                                        <MenuItem key={dept} value={dept}>{dept}</MenuItem>
+                                    ))
+                                )}
+                            </TextField>
                         )}
 
-                        <Grid item xs={12} sm={6}>
+                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2.5 }}>
                             <TextField
                                 label="Valid From"
                                 name="validFrom"
@@ -458,9 +450,7 @@ export default function AssignmentManager() {
                                 InputLabelProps={{ shrink: true }}
                                 required
                             />
-                        </Grid>
 
-                        <Grid item xs={12} sm={6}>
                             <TextField
                                 label="Valid Until (Expiry)"
                                 name="validUntil"
@@ -471,38 +461,34 @@ export default function AssignmentManager() {
                                 InputLabelProps={{ shrink: true }}
                                 required
                             />
-                        </Grid>
+                        </Box>
 
-                        <Grid item xs={12}>
-                            <TextField
-                                select
-                                label="Delegated From (Optional)"
-                                name="delegatedFromUserId"
-                                value={formData.delegatedFromUserId}
-                                onChange={handleFormChange}
-                                fullWidth
-                                helperText="To delegate responsibilities temporarily from another faculty member."
-                            >
-                                <MenuItem value="">-- None (Direct Assignment) --</MenuItem>
-                                {facultyList.map((f) => (
-                                    <MenuItem key={f.id} value={f.id}>{f.name} ({f.email})</MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
+                        <TextField
+                            select
+                            label="Delegated From (Optional)"
+                            name="delegatedFromUserId"
+                            value={formData.delegatedFromUserId}
+                            onChange={handleFormChange}
+                            fullWidth
+                            helperText="To delegate responsibilities temporarily from another faculty member."
+                        >
+                            <MenuItem value="">-- None (Direct Assignment) --</MenuItem>
+                            {facultyList.map((f) => (
+                                <MenuItem key={f.id} value={f.id}>{f.name} ({f.email})</MenuItem>
+                            ))}
+                        </TextField>
 
-                        <Grid item xs={12}>
-                            <FormControlLabel
-                                control={
-                                    <Switch 
-                                        checked={formData.isActive} 
-                                        onChange={handleToggleActive} 
-                                        color="primary"
-                                    />
-                                }
-                                label="Assignment Status is Active"
-                            />
-                        </Grid>
-                    </Grid>
+                        <FormControlLabel
+                            control={
+                                <Switch 
+                                    checked={formData.isActive} 
+                                    onChange={handleToggleActive} 
+                                    color="primary"
+                                />
+                            }
+                            label="Assignment Status is Active"
+                        />
+                    </Box>
                 </DialogContent>
                 <DialogActions sx={{ p: 2.5 }}>
                     <Button onClick={handleCloseDialog} color="inherit" sx={{ textTransform: 'none' }}>
