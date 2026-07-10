@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { TextField, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Alert, List as MuiList, ListItem, ListItemText, Snackbar, Grid, Card, CardContent, Divider, Chip, CircularProgress } from '@mui/material';
+import { TextField, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Alert, List as MuiList, ListItem, ListItemText, Snackbar, Grid, Card, CardContent, Divider, Chip, CircularProgress, Container } from '@mui/material';
 import EditorJS from "@editorjs/editorjs";
 import Header from "@editorjs/header";
 import List from "@editorjs/list";
@@ -635,7 +635,7 @@ export default function CreateQuestion() {
             </Typography>
             
             {bloomAnalysis ? (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <Typography variant="body2" sx={{ fontWeight: 700 }}>Cognitive Tier:</Typography>
                   <Chip 
@@ -668,7 +668,7 @@ export default function CreateQuestion() {
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 700, mb: 1.5 }}>Quality & Improvement Tips:</Typography>
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                    {bloomAnalysis.suggestions.map((s, idx) => (
+                    {(bloomAnalysis.suggestions || []).map((s, idx) => (
                       <Alert key={idx} severity="info" icon={false} sx={{ py: 0.5, px: 2, borderRadius: 2, fontSize: "0.825rem", border: "1px solid #e0f2fe", bgcolor: "#f0f9ff", color: "#0369a1" }}>
                         {s}
                       </Alert>
@@ -683,7 +683,7 @@ export default function CreateQuestion() {
                     Reference Action Verbs
                   </Typography>
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
-                    {bloomAnalysis.tips && bloomAnalysis.tips[bloomAnalysis.bloomLevel]?.slice(0, 10).map((v, i) => (
+                    {bloomAnalysis.tips && (bloomAnalysis.tips[bloomAnalysis.bloomLevel] || []).slice(0, 10).map((v, i) => (
                       <Chip key={i} label={v} size="small" variant="outlined" sx={{ fontSize: "0.75rem" }} />
                     ))}
                   </Box>
@@ -729,7 +729,7 @@ export default function CreateQuestion() {
                 <>
                   <Typography variant="subtitle2">Similar Questions in DB:</Typography>
                   <MuiList dense sx={{ bgcolor: '#f5f5f5', borderRadius: 1, mt: 1 }}>
-                    {simResult.similarQuestions.map((q, i) => (
+                    {(simResult.similarQuestions || []).map((q, i) => (
                       <ListItem key={i}>
                         <ListItemText primary={q} />
                       </ListItem>
@@ -752,7 +752,7 @@ export default function CreateQuestion() {
           <MathJaxContext config={mathJaxConfig}>
             <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
               {savedJson && savedJson.editorData ? (
-                savedJson.editorData.blocks.slice(0, 8).map((b, i) => {
+                (savedJson.editorData.blocks || []).slice(0, 8).map((b, i) => {
                   const alignment = b.tunes?.alignmentTune?.alignment || "left";
                   const style = { textAlign: alignment };
 
@@ -772,7 +772,7 @@ export default function CreateQuestion() {
               )}
             </div>
             {savedJson && savedJson.editorData &&
-              savedJson.editorData.blocks
+              (savedJson.editorData.blocks || [])
                 .filter((b) => b.type === "math")
                 .map((b, idx) => (
                   <div key={idx} style={{ marginTop: 8 }}>

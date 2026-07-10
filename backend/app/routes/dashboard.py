@@ -70,7 +70,7 @@ def get_academic_dashboard():
         expert_subjects = Subject.query.filter(Subject.id.in_(expert_subject_ids)).all() if expert_subject_ids else []
 
         for sub in expert_subjects:
-            pending_count = Question.query.filter_by(subject_id=sub.id, status='PENDING_REVIEW').count()
+            pending_count = Question.query.filter(Question.subject_id == sub.id, Question.status != 'APPROVED').count()
             result['expertSubjects'].append({
                 'id': str(sub.id),
                 'code': sub.code,
