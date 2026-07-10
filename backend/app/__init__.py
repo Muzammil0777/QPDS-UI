@@ -98,6 +98,16 @@ def create_app(config_class=Config):
     def health():
         return {'status': 'ok'}
 
+    # Automatically upgrade database migrations on startup for non-sqlite databases
+    with app.app_context():
+        if db.engine.dialect.name != 'sqlite':
+            from flask_migrate import upgrade as flask_migrate_upgrade
+            try:
+                flask_migrate_upgrade()
+                app.logger.info("Database migrations upgraded successfully.")
+            except Exception as e:
+                app.logger.error(f"Failed to run database migrations: {e}")
+
     # Run database integrity check and auto-healing for orphaned questions on startup
     heal_database(app)
 
