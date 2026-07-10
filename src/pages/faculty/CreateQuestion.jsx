@@ -506,11 +506,11 @@ export default function CreateQuestion() {
 
       <Grid container spacing={4}>
         {/* Left Column: Form & Editor */}
-        <Grid item xs={12} md={7.5}>
+        <Grid size={{ xs: 12, md: 7.5 }}>
           <Paper variant="outlined" sx={{ p: 4, borderRadius: 4, borderColor: "divider", mb: 4 }}>
             {/* Subject and CO Inputs */}
             <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   select
                   fullWidth
@@ -525,7 +525,7 @@ export default function CreateQuestion() {
                   ))}
                 </TextField>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   select
                   fullWidth
@@ -545,7 +545,7 @@ export default function CreateQuestion() {
 
             {/* Marks & Difficulty */}
             <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <TextField
                   label="Marks"
                   type="number"
@@ -555,7 +555,7 @@ export default function CreateQuestion() {
                   onChange={(e) => setMarks(e.target.value)}
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <TextField
                   select
                   fullWidth
@@ -625,7 +625,7 @@ export default function CreateQuestion() {
         </Grid>
 
         {/* Right Column: Live Bloom analysis */}
-        <Grid item xs={12} md={4.5}>
+        <Grid size={{ xs: 12, md: 4.5 }}>
           <Paper variant="outlined" sx={{ p: 3, borderRadius: 4, borderColor: "divider", bgcolor: "#fcfdfe", minHeight: 300 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
               <RateReviewIcon color="primary" /> Bloom's Cognitive Analysis

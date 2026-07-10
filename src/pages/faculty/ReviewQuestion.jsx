@@ -360,7 +360,7 @@ export default function ReviewQuestion() {
 
       <Grid container spacing={4}>
         {/* Left: Editor Stem */}
-        <Grid item xs={12} md={7.5}>
+        <Grid size={{ xs: 12, md: 7.5 }}>
           <Paper variant="outlined" sx={{ p: 4, borderRadius: 4, borderColor: "divider" }}>
             <Typography variant="h5" sx={{ fontWeight: 800, mb: 1, fontFamily: "Plus Jakarta Sans, sans-serif" }}>
               Evaluate Question Stem
@@ -417,7 +417,7 @@ export default function ReviewQuestion() {
         </Grid>
 
         {/* Right: Live Taxonomy Panel & Action Suggestions */}
-        <Grid item xs={12} md={4.5}>
+        <Grid size={{ xs: 12, md: 4.5 }}>
           <Paper variant="outlined" sx={{ p: 3, borderRadius: 4, borderColor: "divider", bgcolor: "#fcfdfe", height: "100%" }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
               <RateReviewIcon color="primary" /> Bloom's Cognitive Analysis
