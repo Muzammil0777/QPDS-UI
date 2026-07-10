@@ -29,6 +29,7 @@ import SystemSettings from './pages/admin/SystemSettings';
 import FacultyDashboard from './pages/faculty/Dashboard';
 import CreateQuestion from './pages/faculty/CreateQuestion';
 import FacultySubjectDetails from './pages/faculty/FacultySubjectDetails';
+import ReviewQuestion from './pages/faculty/ReviewQuestion';
 
 function App() {
   return (
@@ -85,6 +86,12 @@ function App() {
         <Route path="/faculty/subject/:subjectId" element={
           <FacultyRoute>
             <FacultySubjectDetails />
+          </FacultyRoute>
+        } />
+
+        <Route path="/faculty/review-question/:questionId" element={
+          <FacultyRoute>
+            <ReviewQuestion />
           </FacultyRoute>
         } />
 

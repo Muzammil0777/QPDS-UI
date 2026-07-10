@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Box, Paper, List, ListItem, ListItemText, Divider, Chip, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { Typography, Box, Paper, List, ListItem, ListItemText, Divider, Chip, Table, TableBody, TableCell, TableHead, TableRow, Button } from '@mui/material';
 import api from '../../services/api';
 
 export default function FacultySubjectDetails() {
@@ -63,6 +63,8 @@ export default function FacultySubjectDetails() {
                                 <TableCell>Source</TableCell>
                                 <TableCell>Creator</TableCell>
                                 <TableCell>Created At</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell align="right">Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -70,16 +72,10 @@ export default function FacultySubjectDetails() {
                                 <TableRow key={q.id}>
                                     <TableCell>
                                         <div style={{ maxHeight: '100px', overflow: 'hidden' }}>
-                                            {/* Render a snippet or title if possible. EditorJs data is complex JSON. */}
-                                            {/* Just showing "Question ID" or snippet might be tricky without parsing. */}
-                                            {/* Let's Try to show first block text */}
                                             {q.editorData?.blocks?.[0]?.data?.text || "Untitled Question"}
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        {/* We need to map CO ID to Code? Or just show ID? */}
-                                        {/* Ideally backend populates CO Code. Currently q.courseOutcomeId is ID. */}
-                                        {/* We can match with `cos` list */}
                                         {cos.find(c => c.id === q.courseOutcomeId)?.coCode || "-"}
                                     </TableCell>
                                     <TableCell>
@@ -104,10 +100,32 @@ export default function FacultySubjectDetails() {
                                         {q.creatorName || "Unknown"}
                                     </TableCell>
                                     <TableCell>{new Date(q.createdAt).toLocaleDateString()}</TableCell>
+                                    <TableCell>
+                                        <Chip 
+                                            label={q.status || "DRAFT"} 
+                                            size="small" 
+                                            color={
+                                                q.status === 'APPROVED' ? 'success' :
+                                                q.status === 'PENDING_REVIEW' ? 'warning' :
+                                                q.status === 'REVISION_NEEDED' ? 'error' : 'default'
+                                            }
+                                            sx={{ fontWeight: 600 }}
+                                        />
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <Button 
+                                            variant="outlined" 
+                                            size="small" 
+                                            onClick={() => navigate(`/faculty/review-question/${q.id}`)}
+                                            sx={{ textTransform: 'none', fontWeight: 600 }}
+                                        >
+                                            Review
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={6}>No questions found.</TableCell>
+                                    <TableCell colSpan={8}>No questions found.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>

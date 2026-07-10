@@ -12,6 +12,9 @@ def create_question(data, user_id):
     # Optional fields
     marks = data.get('marks')
     difficulty = data.get('difficulty')
+    status = data.get('status', 'DRAFT')
+    if status not in ['DRAFT', 'PENDING_REVIEW']:
+        status = 'DRAFT'
 
     # Legacy fields (lazy extraction)
     ay_label = None
@@ -147,7 +150,7 @@ def create_question(data, user_id):
         difficulty=computed_difficulty,
         bloom_level=computed_bloom_level,
         editor_data=editor_data,
-        status="DRAFT"
+        status=status
     )
     db.session.add(question)
     db.session.commit()

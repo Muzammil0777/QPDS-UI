@@ -452,3 +452,69 @@ def update_question(question_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+@bp.route('/analyze-bloom', methods=['POST'])
+@jwt_required()
+def analyze_bloom():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No input data provided'}), 400
+        
+        q_text = data.get('text', '')
+        if not q_text and 'editorData' in data:
+            from ..services.bloom_service import extract_text_from_editor_data
+            q_text = extract_text_from_editor_data(data['editorData'])
+            
+        if not q_text:
+            return jsonify({
+                'bloomLevel': 'understand',
+                'difficulty': 'EASY',
+                'keywordsFound': [],
+                'suggestions': ['Please enter some question content to analyze.'],
+                'tips': {}
+            })
+            
+        from ..services.bloom_service import classify_bloom_level, map_to_difficulty, BLOOM_KEYWORDS
+        
+        normalized = q_text.lower()
+        import string
+        translator = str.maketrans('', '', string.punctuation)
+        normalized_clean = normalized.translate(translator)
+        
+        keywords_found = []
+        for level, keywords in BLOOM_KEYWORDS.items():
+            for kw in keywords:
+                import re
+                pattern = r'\b' + re.escape(kw) + r'\b'
+                if re.search(pattern, normalized_clean):
+                    keywords_found.append(kw)
+                    
+        bloom_level = classify_bloom_level(q_text)
+        difficulty = map_to_difficulty(bloom_level)
+        
+        suggestions = []
+        if keywords_found:
+            suggestions.append(f"Question matched active action verb(s): {', '.join(keywords_found)}.")
+            suggestions.append(f"Classified at the '{bloom_level.capitalize()}' cognitive tier, suggesting a '{difficulty}' difficulty rating.")
+        else:
+            suggestions.append("No specific Bloom's Taxonomy action verbs detected. Defaulted classification to 'Understand'.")
+            suggestions.append("Consider starting your question with action verbs (e.g. explain, analyze, evaluate, design) to make its cognitive expectations clear.")
+            
+        if bloom_level in ['remember', 'understand']:
+            suggestions.append("To elevate this to a higher cognitive level (e.g., 'Apply' or 'Analyze'), ask students to compute, demonstrate, solve, compare, or break down a scenario.")
+        elif bloom_level in ['apply', 'analyze']:
+            suggestions.append("To elevate this to the highest levels (e.g., 'Evaluate' or 'Create'), prompt students to critique, defend, justify, recommend, design, or formulate a solution.")
+            
+        return jsonify({
+            'bloomLevel': bloom_level,
+            'difficulty': difficulty,
+            'keywordsFound': keywords_found,
+            'suggestions': suggestions,
+            'tips': BLOOM_KEYWORDS
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+

@@ -1,20 +1,17 @@
-// src/pages/CreateQuestion.js
 import React, { useEffect, useRef, useState } from "react";
-import { TextField, MenuItem } from '@mui/material';
+import { TextField, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Alert, List as MuiList, ListItem, ListItemText, Snackbar, Grid, Card, CardContent, Divider, Chip, CircularProgress } from '@mui/material';
 import EditorJS from "@editorjs/editorjs";
 import Header from "@editorjs/header";
 import List from "@editorjs/list";
 import Table from "@editorjs/table";
-import Checklist from "@editorjs/checklist";
 import ImageTool from "@editorjs/image";
+import Paragraph from "@editorjs/paragraph";
+import AlignmentTuneTool from "editorjs-text-alignment-blocktune";
 import { MathJax, MathJaxContext } from "better-react-mathjax";
 import api from "../../services/api";
 import "./createQuestion.css";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Alert, List as MuiList, ListItem, ListItemText, Snackbar } from '@mui/material';
+import RateReviewIcon from "@mui/icons-material/RateReview";
 
-/**
- * Helper: safely destroy EditorJS instance without assuming destroy() returns a Promise.
- */
 function safeDestroyEditorInstance(inst) {
   if (!inst) return;
   try {
@@ -29,10 +26,6 @@ function safeDestroyEditorInstance(inst) {
   }
 }
 
-/* --------------------
-   MathTool: accepts LaTeX or MathML input.
-   Stores { latex: string, mathml: string, display: boolean }
-   -------------------- */
 class MathTool {
   constructor({ data }) {
     this.data = {
@@ -40,14 +33,12 @@ class MathTool {
       mathml: (data && data.mathml) || "",
       display: (data && data.display) !== undefined ? data.display : false,
     };
-    this.wrapper = null;
   }
 
   static get toolbox() {
     return {
       title: "Math",
-      icon:
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12h6" stroke="currentColor" stroke-width="2"/><path d="M15 12h6" stroke="currentColor" stroke-width="2"/><path d="M8 6l8 12" stroke="currentColor" stroke-width="2"/></svg>',
+      icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12h6" stroke="currentColor" stroke-width="2"/><path d="M15 12h6" stroke="currentColor" stroke-width="2"/><path d="M8 6l8 12" stroke="currentColor" stroke-width="2"/></svg>',
     };
   }
 
@@ -74,7 +65,7 @@ class MathTool {
     labelRow.appendChild(mathmlBtn);
 
     const textarea = document.createElement("textarea");
-    textarea.placeholder = "Enter LaTeX (\\frac{a}{b}) or MathML (<math>...)</math>)";
+    textarea.placeholder = "Enter LaTeX or MathML";
     textarea.className = "ce-math-textarea";
     textarea.value = this.data.latex || this.data.mathml || "";
 
@@ -92,7 +83,7 @@ class MathTool {
       const v = textarea.value.trim();
       if (!v) return "<div class='ce-math-empty'>No formula</div>";
       const isMathML = v.startsWith("<") && v.toLowerCase().includes("<math");
-      if (isMathML) return v; // inject MathML directly
+      if (isMathML) return v;
       return displayCheckbox.checked ? `\\[${v}\\]` : `\\(${v}\\)`;
     };
 
@@ -101,9 +92,7 @@ class MathTool {
         if (window && window.MathJax && window.MathJax.typesetPromise) {
           window.MathJax.typesetPromise([preview]).catch(() => { });
         }
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     };
 
     preview.innerHTML = makePreviewHtml();
@@ -121,18 +110,6 @@ class MathTool {
       }
       preview.innerHTML = makePreviewHtml();
       typeset();
-    });
-
-    latexBtn.addEventListener("click", () => {
-      const current = this.data.latex || this.data.mathml || "";
-      textarea.value = current;
-      textarea.focus();
-    });
-
-    mathmlBtn.addEventListener("click", () => {
-      const current = this.data.mathml || this.data.latex || "";
-      textarea.value = current;
-      textarea.focus();
     });
 
     displayCheckbox.addEventListener("change", () => {
@@ -162,64 +139,22 @@ class MathTool {
   }
 }
 
-/* --------------------
-   Editor tools config
-   -------------------- */
-import AlignmentTuneTool from "editorjs-text-alignment-blocktune";
-import Paragraph from "@editorjs/paragraph";
-
-/* --------------------
-   Editor tools config
-   -------------------- */
 const tools = {
-  alignmentTune: {
-    class: AlignmentTuneTool,
-    config: {
-      default: "left",
-      blocks: {
-        header: "center",
-        list: "right",
-      },
-    },
-  },
-  paragraph: {
-    class: Paragraph,
-    inlineToolbar: true,
-    tunes: ["alignmentTune"],
-  },
-  header: {
-    class: Header,
-    tunes: ["alignmentTune"],
-  },
-  list: {
-    class: List,
-    tunes: ["alignmentTune"],
-  },
-  // checklist: {
-  //   class: Checklist,
-  //   inlineToolbar: true,
-  //   tunes: ["alignmentTune"],
-  // },
-  table: {
-    class: Table,
-    tunes: ["alignmentTune"],
-  },
+  alignmentTune: { class: AlignmentTuneTool, config: { default: "left" } },
+  paragraph: { class: Paragraph, inlineToolbar: true, tunes: ["alignmentTune"] },
+  header: { class: Header, tunes: ["alignmentTune"] },
+  list: { class: List, tunes: ["alignmentTune"] },
+  table: { class: Table, tunes: ["alignmentTune"] },
   image: {
     class: ImageTool,
     tunes: ["alignmentTune"],
     config: {
       uploader: {
-        // Convert image to Base64 for storage in JSON
         async uploadByFile(file) {
           return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onload = (e) => {
-              resolve({
-                success: 1,
-                file: {
-                  url: e.target.result,
-                },
-              });
+              resolve({ success: 1, file: { url: e.target.result } });
             };
             reader.readAsDataURL(file);
           });
@@ -227,15 +162,9 @@ const tools = {
       },
     },
   },
-  math: {
-    class: MathTool,
-    tunes: ["alignmentTune"],
-  },
+  math: { class: MathTool, tunes: ["alignmentTune"] },
 };
 
-/* --------------------
-   Main component
-   -------------------- */
 const DRAFT_KEY = 'qpds_draft_new_question';
 
 export default function CreateQuestion() {
@@ -260,6 +189,10 @@ export default function CreateQuestion() {
   const [draftData, setDraftData] = useState(null);
   const [draftSavedOpen, setDraftSavedOpen] = useState(false);
 
+  // Live analysis state
+  const [editorContentTrigger, setEditorContentTrigger] = useState(0);
+  const [bloomAnalysis, setBloomAnalysis] = useState(null);
+
   // --- Check for existing draft on mount ---
   useEffect(() => {
     try {
@@ -283,7 +216,6 @@ export default function CreateQuestion() {
     if (draftData.marks !== undefined) setMarks(draftData.marks);
     if (draftData.difficulty) setDifficulty(draftData.difficulty);
 
-    // Re-render editor with saved blocks
     if (draftData.editorContent && editorInstanceRef.current) {
       const inst = editorInstanceRef.current;
       if (inst.isReady) {
@@ -303,7 +235,6 @@ export default function CreateQuestion() {
     setShowDraftBanner(false);
   };
 
-  // --- Debounced auto-save helper ---
   const triggerDebouncedSave = () => {
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(async () => {
@@ -326,7 +257,6 @@ export default function CreateQuestion() {
     }, 3000);
   };
 
-  // Cleanup debounce timer on unmount
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -334,7 +264,6 @@ export default function CreateQuestion() {
   }, []);
 
   useEffect(() => {
-    // Fetch assigned subjects
     api.get('/faculty/my-subjects')
       .then(res => setMySubjects(res.data))
       .catch(err => console.error(err));
@@ -344,7 +273,6 @@ export default function CreateQuestion() {
     if (selectedSubject) {
       api.get(`/api/subjects/${selectedSubject}/course-outcomes`)
         .then(res => {
-          console.log("Fetched COs for subject:", res.data);
           setAvailableCOs(res.data);
         })
         .catch(err => {
@@ -359,7 +287,7 @@ export default function CreateQuestion() {
   const holderId = useRef("editorjs-" + Math.random().toString(36).slice(2, 9));
 
   useEffect(() => {
-    if (editorInstanceRef.current) return; // Prevent double init
+    if (editorInstanceRef.current) return;
 
     const editor = new EditorJS({
       holder: holderId.current,
@@ -373,18 +301,16 @@ export default function CreateQuestion() {
         ],
       },
       onReady: () => {
-        console.info("[CreateQuestion] Editor ready");
         editorInstanceRef.current = editor;
+        setEditorContentTrigger(prev => prev + 1);
       },
       onChange: async () => {
         triggerDebouncedSave();
+        setEditorContentTrigger(prev => prev + 1);
       }
     });
 
     return () => {
-      // Cleanup debounce timer
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      // Cleanup function safely destroying synchronously catching React suspense crashes
       if (editorInstanceRef.current) {
         safeDestroyEditorInstance(editorInstanceRef.current);
         editorInstanceRef.current = null;
@@ -392,7 +318,44 @@ export default function CreateQuestion() {
     };
   }, []);
 
-  const handleSave = async () => {
+  // Debounced live bloom analysis
+  useEffect(() => {
+    if (!editorInstanceRef.current) return;
+
+    const extractText = (blocks) => {
+      if (!blocks) return "";
+      return blocks.map(b => {
+        if (b.type === 'header' || b.type === 'paragraph') return b.data.text || "";
+        if (b.type === 'list') return (b.data.items || []).join(' ');
+        if (b.type === 'math') return b.data.latex || b.data.mathml || "";
+        return "";
+      }).join(' ');
+    };
+
+    const runAnalysis = async () => {
+      try {
+        const content = await editorInstanceRef.current.save();
+        const text = extractText(content.blocks);
+        if (!text.trim() || text.trim() === "Question title Write the question stem...") {
+          setBloomAnalysis(null);
+          return;
+        }
+
+        const res = await api.post("/api/questions/analyze-bloom", { text });
+        setBloomAnalysis(res.data);
+      } catch (err) {
+        console.warn("Bloom analysis failed:", err);
+      }
+    };
+
+    const delayDebounce = setTimeout(() => {
+      runAnalysis();
+    }, 600);
+
+    return () => clearTimeout(delayDebounce);
+  }, [editorContentTrigger]);
+
+  const handleSave = async (targetStatus = "DRAFT") => {
     if (!editorInstanceRef.current) return alert("Editor not ready");
     if (!selectedSubject || !selectedCO) {
       return alert("Please select Subject and Course Outcome.");
@@ -402,7 +365,6 @@ export default function CreateQuestion() {
     try {
       const content = await editorInstanceRef.current.save();
       
-      // Validation: ensure question isn't empty or just default placeholders
       let hasRealContent = false;
       if (content.blocks && content.blocks.length > 0) {
           for (let block of content.blocks) {
@@ -415,7 +377,6 @@ export default function CreateQuestion() {
                   break;
               }
               if (block.type !== 'paragraph' && block.type !== 'header') {
-                  // Any image, list, math block counts as real content
                   hasRealContent = true;
                   break;
               }
@@ -432,6 +393,7 @@ export default function CreateQuestion() {
         marks: parseInt(marks),
         difficulty: difficulty,
         editorData: content,
+        status: targetStatus
       };
 
       console.log("Sending payload:", payload);
@@ -439,9 +401,11 @@ export default function CreateQuestion() {
       const response = await api.post("/api/questions", payload);
 
       setSavedJson(response.data);
-      // Clear auto-save draft on successful save
       localStorage.removeItem(DRAFT_KEY);
-      alert("Question saved successfully to database!");
+      alert(targetStatus === "PENDING_REVIEW" 
+        ? "Question submitted successfully for peer review!" 
+        : "Question saved as draft successfully!"
+      );
     } catch (err) {
       console.error("Save error:", err);
       alert("Save failed: " + (err.response?.data?.error || err.message));
@@ -450,35 +414,24 @@ export default function CreateQuestion() {
 
   const handleClear = async () => {
     const inst = editorInstanceRef.current;
-    if (!inst) {
-      alert("Editor not ready");
-      return;
-    }
+    if (!inst) return alert("Editor not ready");
     try {
       if (inst.blocks && typeof inst.blocks.clear === "function") {
         await inst.blocks.clear();
       } else if (typeof inst.clear === "function") {
         await inst.clear();
       } else {
-        // fallback: destroy safely and reload page to re-init
         safeDestroyEditorInstance(inst);
         window.location.reload();
         return;
       }
       setSavedJson(null);
-      // Clear auto-save draft on clear
+      setBloomAnalysis(null);
       localStorage.removeItem(DRAFT_KEY);
     } catch (e) {
-      console.warn("Clear failed, reloading:", e);
       safeDestroyEditorInstance(inst);
       window.location.reload();
     }
-  };
-
-  // MathJax config for preview
-  const mathJaxConfig = {
-    loader: { load: ["input/tex", "input/mml", "output/svg"] },
-    tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]] },
   };
 
   const handleCheckSimilarity = async () => {
@@ -488,7 +441,6 @@ export default function CreateQuestion() {
     setChecking(true);
     try {
       const content = await editorInstanceRef.current.save();
-      // Extract text
       const text = content.blocks.map(b => {
         if (b.type === 'header' || b.type === 'paragraph') return b.data.text;
         if (b.type === 'list') return b.data.items.join(' ');
@@ -504,118 +456,251 @@ export default function CreateQuestion() {
       setOpenSimDialog(true);
     } catch (err) {
       console.error("Similarity check error:", err);
-      const msg = err.response?.data?.error || err.message;
-      alert('Failed to check similarity: ' + msg);
+      alert('Failed to check similarity: ' + (err.response?.data?.error || err.message));
     } finally {
       setChecking(false);
     }
   };
 
-  return (
-    <div style={{ padding: 20, maxWidth: 1100, margin: "auto" }}>
-      <h1>Create Question</h1>
+  const mathJaxConfig = {
+    loader: { load: ["input/tex", "input/mml", "output/svg"] },
+    tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]] },
+  };
 
-      {/* --- Draft Restore Banner --- */}
+  const getBloomColor = (level) => {
+    const mapping = {
+      remember: "#3b82f6",
+      understand: "#10b981",
+      apply: "#f59e0b",
+      analyze: "#8b5cf6",
+      evaluate: "#ef4444",
+      create: "#ec4899"
+    };
+    return mapping[level?.toLowerCase()] || "#6b7280";
+  };
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, letterSpacing: '-0.02em', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+        Create Question
+      </Typography>
+
       {showDraftBanner && (
         <Alert
           severity="info"
-          sx={{ mb: 2 }}
+          sx={{ mb: 3, borderRadius: 3 }}
           action={
-            <>
-              <Button color="inherit" size="small" onClick={handleRestoreDraft}>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button color="inherit" size="small" onClick={handleRestoreDraft} sx={{ fontWeight: 700 }}>
                 Restore Draft
               </Button>
               <Button color="inherit" size="small" onClick={handleDiscardDraft}>
                 Discard
               </Button>
-            </>
+            </Box>
           }
         >
           We found an unsaved draft from your previous session.
         </Alert>
       )}
 
-      <div
-        style={{
-          border: "1px solid #eef2f6",
-          padding: 12,
-          borderRadius: 8,
-          marginBottom: 12,
-          display: "flex",
-          gap: 12,
-          alignItems: "center",
-          flexWrap: "wrap"
-        }}
-      >
-        <label>
-          Subject:
-          <select value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)} style={{ marginLeft: 8, padding: 4 }}>
-            <option value="">Select Subject</option>
-            {mySubjects.map(sub => (
-              <option key={sub.id} value={sub.id}>{sub.code} - {sub.name}</option>
-            ))}
-          </select>
-        </label>
+      <Grid container spacing={4}>
+        {/* Left Column: Form & Editor */}
+        <Grid item xs={12} md={7.5}>
+          <Paper variant="outlined" sx={{ p: 4, borderRadius: 4, borderColor: "divider", mb: 4 }}>
+            {/* Subject and CO Inputs */}
+            <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Subject"
+                  size="small"
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value)}
+                >
+                  <MenuItem value="">Select Subject</MenuItem>
+                  {mySubjects.map(sub => (
+                    <MenuItem key={sub.id} value={sub.id}>{sub.code} - {sub.name}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Course Outcome"
+                  size="small"
+                  value={selectedCO}
+                  disabled={!selectedSubject}
+                  onChange={(e) => setSelectedCO(e.target.value)}
+                >
+                  <MenuItem value="">Select CO</MenuItem>
+                  {availableCOs.map(co => (
+                    <MenuItem key={co.id} value={co.id}>{co.coCode} - {co.description}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
 
-        <label>
-          Course Outcome:
-          <select value={selectedCO} onChange={(e) => setSelectedCO(e.target.value)} style={{ marginLeft: 8, padding: 4 }}>
-            <option value="">Select CO</option>
-            {availableCOs.map(co => (
-              <option key={co.id} value={co.id}>{co.coCode} - {co.description}</option>
-            ))}
-          </select>
-        </label>
-      </div>
+            {/* Marks & Difficulty */}
+            <Grid container spacing={2.5} sx={{ mb: 3.5 }}>
+              <Grid item xs={6}>
+                <TextField
+                  label="Marks"
+                  type="number"
+                  fullWidth
+                  size="small"
+                  value={marks}
+                  onChange={(e) => setMarks(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Difficulty"
+                  size="small"
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                >
+                  <MenuItem value="EASY">Easy</MenuItem>
+                  <MenuItem value="MEDIUM">Medium</MenuItem>
+                  <MenuItem value="HARD">Hard</MenuItem>
+                </TextField>
+              </Grid>
+            </Grid>
 
-      <div style={{
-        border: "1px solid #eef2f6",
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 12,
-        display: "flex",
-        gap: 12,
-        alignItems: "center",
-        flexWrap: "wrap",
-        background: "#fafafa"
-      }}>
-        <TextField
-          label="Marks"
-          type="number"
-          size="small"
-          value={marks}
-          onChange={(e) => setMarks(e.target.value)}
-          style={{ width: 100 }}
-        />
-        <TextField
-          select
-          label="Difficulty"
-          size="small"
-          value={difficulty}
-          onChange={(e) => setDifficulty(e.target.value)}
-          style={{ width: 150 }}
-        >
-          <MenuItem value="EASY">Easy</MenuItem>
-          <MenuItem value="MEDIUM">Medium</MenuItem>
-          <MenuItem value="HARD">Hard</MenuItem>
-        </TextField>
-      </div>
+            {/* Editor Stem */}
+            <Box 
+              id={holderId.current} 
+              sx={{ 
+                border: "1px solid #eef2f6", 
+                borderRadius: 3, 
+                minHeight: 340, 
+                p: 2, 
+                bgcolor: "#fff",
+                mb: 3,
+                "& .ce-block": { maxWidth: "100%" }
+              }}
+            />
 
-      <div id={holderId.current} style={{ border: "1px solid #e6e9ef", borderRadius: 8, minHeight: 360, padding: 12, background: "#fff" }}></div>
+            {/* Action Buttons */}
+            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={() => handleSave("PENDING_REVIEW")}
+                sx={{ fontWeight: 600 }}
+              >
+                Submit for Review
+              </Button>
+              <Button 
+                variant="outlined" 
+                color="primary" 
+                onClick={() => handleSave("DRAFT")}
+                sx={{ fontWeight: 600 }}
+              >
+                Save as Draft
+              </Button>
+              <Button 
+                variant="outlined" 
+                color="secondary" 
+                onClick={handleCheckSimilarity}
+                disabled={checking}
+                sx={{ fontWeight: 600 }}
+              >
+                {checking ? 'Checking...' : 'Check Similarity'}
+              </Button>
+              <Button 
+                variant="text" 
+                color="inherit" 
+                onClick={handleClear}
+                sx={{ fontWeight: 600 }}
+              >
+                Clear
+              </Button>
+            </Box>
+          </Paper>
+        </Grid>
 
-      <div style={{ marginTop: 12, display: "flex", gap: 12 }}>
-        <button onClick={handleSave} style={{ background: "#2563eb", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 6 }}>
-          Save Question
-        </button>
-        <button onClick={handleCheckSimilarity} disabled={checking} style={{ background: "#7c3aed", color: "#fff", padding: "8px 14px", border: "none", borderRadius: 6 }}>
-          {checking ? 'Checking...' : 'Check Similarity'}
-        </button>
-        <button onClick={handleClear} style={{ background: "#f6f6f6", color: "#333", padding: "8px 14px", border: "none", borderRadius: 6 }}>
-          Clear
-        </button>
-      </div>
+        {/* Right Column: Live Bloom analysis */}
+        <Grid item xs={12} md={4.5}>
+          <Paper variant="outlined" sx={{ p: 3, borderRadius: 4, borderColor: "divider", bgcolor: "#fcfdfe", minHeight: 300 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
+              <RateReviewIcon color="primary" /> Bloom's Cognitive Analysis
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 3.5 }}>
+              Real-time classification based on action verbs detected in the question content.
+            </Typography>
+            
+            {bloomAnalysis ? (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>Cognitive Tier:</Typography>
+                  <Chip 
+                    label={bloomAnalysis.bloomLevel?.toUpperCase()} 
+                    sx={{ 
+                      bgcolor: getBloomColor(bloomAnalysis.bloomLevel), 
+                      color: "#fff", 
+                      fontWeight: 800, 
+                      letterSpacing: 0.5,
+                      px: 1.5
+                    }} 
+                  />
+                </Box>
 
-      {/* --- Draft Saved Snackbar --- */}
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>Difficulty Recommendation:</Typography>
+                  <Chip 
+                    label={bloomAnalysis.difficulty} 
+                    variant="outlined"
+                    sx={{ 
+                      borderColor: bloomAnalysis.difficulty === "EASY" ? "success.main" : bloomAnalysis.difficulty === "MEDIUM" ? "warning.main" : "error.main",
+                      color: bloomAnalysis.difficulty === "EASY" ? "success.main" : bloomAnalysis.difficulty === "MEDIUM" ? "warning.main" : "error.main",
+                      fontWeight: 700 
+                    }} 
+                  />
+                </Box>
+
+                <Divider />
+
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 1.5 }}>Quality & Improvement Tips:</Typography>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                    {bloomAnalysis.suggestions.map((s, idx) => (
+                      <Alert key={idx} severity="info" icon={false} sx={{ py: 0.5, px: 2, borderRadius: 2, fontSize: "0.825rem", border: "1px solid #e0f2fe", bgcolor: "#f0f9ff", color: "#0369a1" }}>
+                        {s}
+                      </Alert>
+                    ))}
+                  </Box>
+                </Box>
+
+                <Divider />
+
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700, display: "block", mb: 1, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                    Reference Action Verbs
+                  </Typography>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                    {bloomAnalysis.tips && bloomAnalysis.tips[bloomAnalysis.bloomLevel]?.slice(0, 10).map((v, i) => (
+                      <Chip key={i} label={v} size="small" variant="outlined" sx={{ fontSize: "0.75rem" }} />
+                    ))}
+                  </Box>
+                </Box>
+              </Box>
+            ) : (
+              <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 8, color: "text.secondary" }}>
+                <Typography variant="body2" align="center">
+                  Start typing in the editor to see real-time cognitive classification & verb recommendations.
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Snackbar for auto-draft */}
       <Snackbar
         open={draftSavedOpen}
         autoHideDuration={2000}
@@ -624,6 +709,7 @@ export default function CreateQuestion() {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       />
 
+      {/* Similarity Dialog */}
       <Dialog open={openSimDialog} onClose={() => setOpenSimDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Similarity Check Result</DialogTitle>
         <DialogContent dividers>
@@ -659,13 +745,13 @@ export default function CreateQuestion() {
         </DialogActions>
       </Dialog>
 
-      <div style={{ marginTop: 18 }}>
-        <h3>Preview</h3>
-        <div style={{ padding: 12, background: "#fafafa", minHeight: 80, borderRadius: 6 }}>
+      {/* Preview Section */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h5" sx={{ fontWeight: 800, mb: 2, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Preview</Typography>
+        <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, bgcolor: "background.paper" }}>
           <MathJaxContext config={mathJaxConfig}>
             <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
               {savedJson && savedJson.editorData ? (
-                // naive preview: show first few blocks textually; math blocks rendered below
                 savedJson.editorData.blocks.slice(0, 8).map((b, i) => {
                   const alignment = b.tunes?.alignmentTune?.alignment || "left";
                   const style = { textAlign: alignment };
@@ -679,18 +765,12 @@ export default function CreateQuestion() {
                       </div>
                     );
                   if (b.type === "table") return <div key={i} style={style} dangerouslySetInnerHTML={{ __html: "<table><!-- table preview omitted --></table>" }} />;
-                  if (b.type === "math") {
-                    // handled below separately
-                    return <div key={i} style={style} />;
-                  }
                   return <div key={i} style={style}>{JSON.stringify(b.data).slice(0, 200)}</div>;
                 })
               ) : (
-                "No saved payload yet."
+                "No saved question yet."
               )}
             </div>
-
-            {/* Render math blocks explicitly */}
             {savedJson && savedJson.editorData &&
               savedJson.editorData.blocks
                 .filter((b) => b.type === "math")
@@ -700,13 +780,8 @@ export default function CreateQuestion() {
                   </div>
                 ))}
           </MathJaxContext>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 18 }}>
-        <h3>Saved payload (inspectable)</h3>
-        <pre style={{ maxHeight: 260, overflow: "auto", background: "#0b0b0b", color: "#eee", padding: 12 }}>{savedJson ? JSON.stringify(savedJson, null, 2) : "No saved payload yet."}</pre>
-      </div>
-    </div>
+        </Paper>
+      </Box>
+    </Container>
   );
 }
