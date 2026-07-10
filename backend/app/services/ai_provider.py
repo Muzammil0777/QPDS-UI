@@ -72,35 +72,41 @@ class HuggingFaceProvider(AIProvider):
         model_id = os.getenv('HF_MODEL_DUP', 'sentence-transformers/all-MiniLM-L6-v2')
         client = InferenceClient(model=model_id, token=self.api_key)
         
-        embeddings = []
-        api_failed = False
-        
-        for text in texts:
-            if api_failed:
-                embeddings.append([0.0] * 384)
-                continue
+        try:
+            res = client.feature_extraction(texts)
+            if hasattr(res, 'tolist'):
+                embeddings = res.tolist()
+            else:
+                embeddings = list(res)
                 
-            try:
-                emb = client.feature_extraction(text)
-                if len(emb) == 1 and isinstance(emb[0], list):
+            normalized = []
+            for emb in embeddings:
+                if isinstance(emb, list) and len(emb) == 1 and isinstance(emb[0], list):
                     emb = emb[0]
-                embeddings.append(emb)
-            except Exception as e:
-                err_str = str(e).lower()
-                if "401" in err_str or "unauthorized" in err_str or "expired" in err_str:
-                    print(f"HuggingFace API unauthorized or expired: {e}. Failing fast.")
-                    api_failed = True
+                normalized.append(emb)
+            return normalized
+        except Exception as e:
+            print(f"HuggingFace batch embedding extraction failed: {e}. Falling back to individual queries.")
+            embeddings = []
+            api_failed = False
+            for text in texts:
+                if api_failed:
                     embeddings.append([0.0] * 384)
                     continue
-                
                 try:
                     emb = client.feature_extraction(text)
-                    if len(emb) == 1 and isinstance(emb[0], list):
+                    if hasattr(emb, 'tolist'):
+                        emb = emb.tolist()
+                    if isinstance(emb, list) and len(emb) == 1 and isinstance(emb[0], list):
                         emb = emb[0]
                     embeddings.append(emb)
-                except Exception:
+                except Exception as ex:
+                    err_str = str(ex).lower()
+                    if "401" in err_str or "unauthorized" in err_str or "expired" in err_str:
+                        print(f"HuggingFace API unauthorized or expired in fallback: {ex}. Failing fast.")
+                        api_failed = True
                     embeddings.append([0.0] * 384)
-        return embeddings
+            return embeddings
 
     def classify_bloom_level(self, question_text: str) -> str:
         from .bloom_service import classify_bloom_level as kw_classify
