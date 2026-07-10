@@ -7,6 +7,8 @@ import Home from './pages/Home';
 import About from './pages/About';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import AdminRoute from './components/AdminRoute';
 import FacultyRoute from './components/FacultyRoute';
 import AdminLayout from './components/AdminLayout';
@@ -38,6 +40,8 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
 
         {/* Admin Routes */}
         <Route path="/admin" element={

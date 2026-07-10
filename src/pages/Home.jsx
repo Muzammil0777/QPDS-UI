@@ -47,6 +47,18 @@ const staggerContainer = {
 export default function Home() {
     const navigate = useNavigate();
 
+    React.useEffect(() => {
+        const hash = window.location.hash;
+        if (hash) {
+            const element = document.querySelector(hash);
+            if (element) {
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            }
+        }
+    }, []);
+
     return (
         <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', color: 'text.primary' }}>
             
@@ -247,7 +259,7 @@ export default function Home() {
             </Box>
 
             {/* CAPABILITIES SECTION */}
-            <Container maxWidth="lg" sx={{ py: { xs: 10, md: 16 } }}>
+            <Container id="features" maxWidth="lg" sx={{ py: { xs: 10, md: 16 } }}>
                 <Box sx={{ textAlign: 'center', mb: 8 }}>
                     <Typography variant="h3" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
                         Designed for Governance and Integrity
@@ -480,7 +492,7 @@ export default function Home() {
             </Container>
 
             {/* SECURITY & GOVERNANCE SECTION */}
-            <Box sx={{ bgcolor: 'background.paper', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider', py: { xs: 10, md: 14 } }}>
+            <Box id="security" sx={{ bgcolor: 'background.paper', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider', py: { xs: 10, md: 14 } }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: 'center', mb: 8 }}>
                         <Typography variant="h3" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
@@ -564,7 +576,7 @@ export default function Home() {
             </Container>
 
             {/* WHY ASTERIQ */}
-            <Box sx={{ bgcolor: 'background.paper', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider', py: { xs: 10, md: 14 } }}>
+            <Box id="why-us" sx={{ bgcolor: 'background.paper', borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider', py: { xs: 10, md: 14 } }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: 'center', mb: 8 }}>
                         <Typography variant="h3" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
@@ -634,8 +646,8 @@ export default function Home() {
                             <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Resources</Typography>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                 <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }} onClick={() => navigate('/about')}>Documentation</Typography>
-                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }}>Terms & Conditions</Typography>
-                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }}>Privacy Policy</Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }} onClick={() => navigate('/terms')}>Terms & Conditions</Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer', '&:hover': { color: 'text.primary' } }} onClick={() => navigate('/privacy')}>Privacy Policy</Typography>
                             </Box>
                         </Grid>
                         <Grid size={{ xs: 6, md: 4 }}>

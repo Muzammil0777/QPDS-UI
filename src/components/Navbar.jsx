@@ -23,6 +23,17 @@ export default function Navbar() {
         navigate('/login');
     };
 
+    const handleScrollTo = (id) => {
+        if (window.location.pathname === '/') {
+            const element = document.getElementById(id);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        } else {
+            navigate(`/#${id}`);
+        }
+    };
+
     return (
         <AppBar 
             position="sticky" 
@@ -54,6 +65,31 @@ export default function Navbar() {
                     ASTERIQ
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    {!token && (
+                        <>
+                            <Button 
+                                color="inherit" 
+                                onClick={() => handleScrollTo('features')}
+                                sx={{ fontWeight: 600 }}
+                            >
+                                Features
+                            </Button>
+                            <Button 
+                                color="inherit" 
+                                onClick={() => handleScrollTo('security')}
+                                sx={{ fontWeight: 600 }}
+                            >
+                                Security
+                            </Button>
+                            <Button 
+                                color="inherit" 
+                                onClick={() => handleScrollTo('why-us')}
+                                sx={{ fontWeight: 600 }}
+                            >
+                                Why Us
+                            </Button>
+                        </>
+                    )}
                     {['SUPER_ADMIN', 'ADMIN'].includes(role) && (
                         <Button 
                             color="inherit" 
