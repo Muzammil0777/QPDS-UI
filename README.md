@@ -1,161 +1,120 @@
-# Question Paper Generation and Distribution System (QPDS)
+# Asteriq Papers: The AI-Powered Exam Lifecycle Operating System
 
-A comprehensive, AI-powered system designed to streamline the entire lifecycle of question paper management for educational institutions. QPDS enables faculty to collaboratively create, review, and distribute high-quality question papers while providing administrators with robust oversight and validation tools.
-
----
-
-## 🚀 Live Demo
-
-- **Frontend (Vercel):** [QPDS-UI](https://qpds-ui.vercel.app/) _(Redirects to Login on Get Started)_
-- **Backend (Render):** [QPDS-API](https://qpds-ui.onrender.com)
-- **Database (Neon):** PostgreSQL (Managed)
+Asteriq Papers (formerly QPDS) is an enterprise-grade academic lifecycle operating system designed to automate, secure, and validate the entire exam generation process. Built on an on-premise first philosophy, Asteriq Papers enables academic institutions to manage syllabus alignment, dynamically compile question papers, conduct peer reviews, and securely export final exam packets, all while ensuring absolute data sovereignty and regulatory compliance.
 
 ---
 
-## 📊 System Workflows & Architecture
+## 🚀 Live Demo & Hosting
 
-### 1. High-Level System Architecture
-The application follows a clean client-server architecture. The React frontend interacts with the secure Flask API, which interfaces with a Neon PostgreSQL instance and various external AI/CDN services.
-
-```mermaid
-graph TD
-    %% Styling Classes
-    classDef client fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1;
-    classDef server fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#1B5E20;
-    classDef db fill:#FFF3E0,stroke:#E65100,stroke-width:2px,color:#E65100;
-    classDef external fill:#F3E5F5,stroke:#6A1B9A,stroke-width:2px,color:#4A148C;
-
-    subgraph Client [Frontend UI Client - React 18 & Material UI]
-        C1[Admin / Faculty Dashboards]:::client
-        C2[Drag-and-Drop Paper Composer]:::client
-        C3[Blueprint Sidebar Analytics]:::client
-        C4[Local Auto-Save Engine]:::client
-    end
-
-    subgraph Server [RESTful API Server - Flask / Gunicorn]
-        S1[JWT Auth & RBAC Manager]:::server
-        S2[AI NLP Question Generator]:::server
-        S3[Paper Validation Engine]:::server
-        S4[Multi-Format Export Service]:::server
-    end
-
-    subgraph Storage [Database Storage - PostgreSQL]
-        D1[(Neon Serverless DB)]:::db
-        D2[(Tables: Users, Subjects, Questions, COs, Papers)]:::db
-    end
-
-    subgraph External [External Services]
-        E1[Google Gemini AI / HuggingFace]:::external
-        E2[MathJax Equation Rendering]:::external
-    end
-
-    %% Flow/Connections
-    Client <-->|Secure REST API Calls + JWT| Server
-    Server <-->|SQLAlchemy ORM Queries| Storage
-    Server <-->|API Prompts / Responses| E1
-    Client <-->|CDN Scripts & Style Loading| E2
-```
-
-### 2. Question Paper Design & Composition Workflow
-Faculty and Administrators can build customized exams using the smart composer. The dashboard checks validation limits in real time to ensure course standards are met.
-
-```mermaid
-flowchart TD
-    %% Styling Classes
-    classDef startEnd fill:#ECEFF1,stroke:#37474F,stroke-width:2px,color:#37474F;
-    classDef process fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#1B5E20;
-    classDef decision fill:#FFF9C4,stroke:#FBC02D,stroke-width:2px,color:#F57F17;
-    classDef action fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1;
-
-    A([Start: Create Paper]):::startEnd --> B[Select Subject & Enter Target Marks]:::process
-    B --> C[Fetch Course Outcomes COs & Blueprint Rules]:::process
-    C --> D[Add Questions from Bank or AI Generator]:::action
-    D --> E{Real-Time Blueprint Validation}:::decision
-    
-    E -->|Marks mismatch, difficulty unbalanced, or COs missing| F[Highlight warning in Sidebar Dashboard]:::process
-    F --> D
-    
-    E -->|Validation Passed| G[Approve and Lock Question Paper]:::process
-    G --> H[Choose Export Format]:::action
-    H --> I1[Download Word .docx]:::action
-    H --> I2[Download LaTeX .tex]:::action
-    H --> I3[Print / Export PDF]:::action
-    I1 & I2 & I3 --> J([End: Ready for Distribution]):::startEnd
-```
-
-### 3. Draft Auto-Save Recovery Sequence
-To prevent data loss due to session timeouts or navigation errors, question creation forms utilize local backup caching.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Faculty Member
-    participant UI as Editor UI (React)
-    participant Local as localStorage
-    participant Server as Flask Backend
-
-    User->>UI: Types question text or changes details
-    Note over UI: 3-Second Debounce Timer
-    UI->>Local: Write form state & EditorJS blocks (JSON)
-    Note right of Local: Saved under key qpds_draft_*
-
-    User->>UI: Closes page / unexpected disconnect
-    User->>UI: Reopens Question Editor
-    UI->>Local: Check if qpds_draft_* exists
-    Local-->>UI: Draft found (JSON)
-    UI->>User: Displays Alert recovery banner
-    alt User clicks Restore Draft
-        UI->>UI: Populate inputs & render EditorJS blocks
-    else User clicks Discard
-        UI->>Local: Remove draft key
-        UI->>UI: Load blank editor
-    end
-    User->>UI: Click Submit Question
-    UI->>Server: POST /api/questions (JWT Auth)
-    Server-->>UI: 201 Created
-    UI->>Local: Clear draft from storage
-```
+- **Frontend Interface (Vercel):** [Asteriq Papers Web App](https://qpds-ui.vercel.app/) *(Redirects to Login on Get Started)*
+- **Backend API Server (Render):** [Asteriq Papers API Service](https://qpds-ui.onrender.com)
+- **Database Engine (Neon):** PostgreSQL (Managed Serverless instance)
 
 ---
 
-## ✨ Key Features
+## 📊 System Architecture & Core Workflows
 
-### 🎓 For Faculty & Item Writers
-- **Smart Rich-Text Editor:** Build beautifully formatted questions using **EditorJS** with support for text alignment, tables, images, bulleted lists, and inline formatting.
-- **Mathematical Equation Rendering:** Support for complex equations using **LaTeX and MathML** through dynamic **MathJax** compilation.
-- **AI-Assisted Question Generation:** Leverage Google Gemini or Hugging Face NLP models to optimize question wording, generate alternative variants, or automatically suggest taxonomy levels.
-- **Debounced Local Auto-Save Drafts:** Automatically saves progress to local storage with a 3-second debouncing window. Shows a restoration banner on load if a previous edit session was interrupted.
-- **Paginated Question Bank:** Filter and navigate through thousands of questions easily via backend paginated queries (`limit` and `offset` parameters) coupled with a Material-UI pagination controls wrapper.
+Rather than using complex graphical diagrams, the sections below outline the system component structures, data flow processes, and workflow sequences that run Asteriq Papers.
 
-### 🛡️ For Administrators & Head of Department
-- **Interactive Blueprint Dashboard:** A dynamic, sticky analytics panel displayed during paper creation:
-  - **Marks Progress Gauge:** Color-coded indicator displaying current accumulated marks vs. targeted blueprint marks.
-  - **Difficulty Stacked Ratio Bar:** Segmented bar showcasing percentages of Easy (Green), Medium (Orange), and Hard (Red) questions.
-  - **Bloom's Taxonomy Checklist:** Real-time checking of cognitive depth, verifying coverage across Low (Remember/Understand), Mid (Apply/Analyze), and High (Evaluate/Create) taxonomy levels.
-  - **Course Outcomes (COs) Coverage Matrix:** Dynamic chip mapping verifying if all subject-specific COs are addressed by selected questions.
-- **Faculty & Role Management:** Approve registrations and manage granular user access levels (Admin / Faculty / Student).
-- **Course & Syllabus Mapping:** Bind specific Course Outcomes (COs) and syllabus modules directly to academic subjects.
-- **BOLA / IDOR Verification Security:** Rigid role-based access checks at backend endpoints. For instance, Faculty can only view/modify questions or blueprints associated with subjects they are registered to instruct.
+### 1. Three-Tier Component Architecture
+The platform is organized into three distinct structural layers designed for data security and low latency:
 
-### 🖨️ Multi-Format Exports
-- **Standardized Word (.docx):** Structured outputs including meta-data tables, instructions blocks, section dividers, and bold/italic markup translation using `python-docx`.
-- **Pure LaTeX Source (.tex):** Instantly downloads compileable LaTeX files utilizing standard document packages (amsmath, tabularx, geometry, enumitem). Properly escapes text special characters (like `&`, `%`, `_`) while passing math blocks directly to LaTeX math notation (`\[ ... \]`).
-- **Print-Ready PDF:** Standardized, print-friendly browser rendering stylesheet matching standard university templates.
+*   **Client Interface Layer (React 18 & Material UI):**
+    A responsive Single Page Application (SPA) that runs entirely in the user's browser. It manages client-side routing, equation layouts via MathJax rendering, local storage drafts caching, and the interactive blueprint validation dashboard.
+*   **Application Services Layer (Flask & SQLAlchemy):**
+    A stateless RESTful API server that processes requests, validates session tokens, checks permissions, runs NLP Bloom's taxonomy classifications, and compiles document outputs. Under production workloads, this layer can scale horizontally behind a reverse proxy (Nginx).
+*   **Database & Storage Layer (PostgreSQL & Redis):**
+    The persistence engine. PostgreSQL stores relational tables (academic calendars, user roles, course outcomes, question banks, and audit logs). An in-memory Redis cache handles active session metadata and rate-limiting counters.
+
+### 2. Detailed Data Flow Model
+When a faculty member interacts with the application, data flows through the following secure path:
+1.  **Request Initiation:** The user performs an action (e.g., editing a math question). The React frontend captures the change, debounces it to limit server load, and fires an HTTPS request with a cryptographically signed JWT token stored in the headers.
+2.  **API Gateway Routing:** The request lands at the API Gateway, which checks rate-limiting limits. If valid, the gateway proxies the request to the Flask server.
+3.  **Auth & Permission Resolution:** The Flask auth middleware decrypts the JWT token, verifies its expiration, and resolves the user's roles. The RBAC utility checks if the user possesses an active assignment (Faculty, Subject Expert, HOD, or COE) for the targeted subject.
+4.  **Business Logic Execution:** If authorized, the route executes the requested operation. For question creation, it sends raw text to the local NLP classification service to estimate its Bloom's Taxonomy category before formatting the data payload.
+5.  **Database Commit & Response:** The SQLAlchemy ORM commits the transactions to PostgreSQL. The server returns a structured JSON payload to the client interface, which updates the UI.
+
+### 3. Blueprint-Driven Exam Composition Workflow
+Composing an examination paper follows a strict validation sequence to guarantee compliance with institutional and accreditation standards (such as NBA and NAAC outcome mappings):
+1.  **Blueprint Setup:** The Controller of Examinations (COE) creates a paper blueprint, defining the subject, total marks (e.g., 100 marks), and targeted difficulty distribution (e.g., 30% Easy, 50% Medium, 20% Hard).
+2.  **Item Compilation:** The exam composer gathers questions from the approved Question Bank or triggers AI suggestions.
+3.  **Real-Time Validation:** As questions are added, a side-panel widget runs calculations on the current draft:
+    *   *Marks Accumulator:* Verifies if current marks match the targeted total marks.
+    *   *Difficulty Balancing:* Evaluates the current difficulty percentages against the target ratios.
+    *   *Outcome Verification:* Evaluates the Course Outcomes (CO) mapping matrix to confirm that all required learning outcomes are assessed by at least one question.
+4.  **Workflow Lock:** If any criteria are missed, warnings are flagged. Once all validation rules pass, the COE locks the paper draft, which transitions its status to `APPROVED_BY_DEPT` and prepares it for export.
+
+### 4. Debounced Draft Recovery Loop
+To protect user progress during network drops or browser crashes, the composer implements an offline draft recovery system:
+1.  **Keystroke Capture:** As a user writes a question in the editor, the interface captures keystrokes.
+2.  **Local Caching:** A 3-second debouncing window waits for the user to pause writing. Once paused, the current editor state is written as a JSON block to the browser's `localStorage` under a unique draft key (`asteriq_draft_[id]`).
+3.  **State Check on Reload:** If the user gets disconnected or closes the tab, the database transaction is interrupted. On reload, the editor checks if a local draft key exists.
+4.  **Prompt Recovery:** If a local draft is detected, a restoration banner prompts the user. If approved, the local JSON state is loaded back into the EditorJS fields, rendering all LaTeX formulas. Once the user manually clicks "Save to DB" and the server commits the record, the local storage key is deleted.
+
+---
+
+## ✨ Key Product Features
+
+### 🎓 For Faculty & Question Writers
+- **Structured Rich-Text Composer:** Build questions using **EditorJS** with support for text alignment, tables, images, and bulleted lists.
+- **Dynamic Equation Compiler:** Renders complex mathematical formulas, equations, and chemical symbols instantly using inline LaTeX notation (e.g., `\( E=mc^2 \)`) and block display syntax via MathJax.
+- **AI-Assisted Item Writer:** Leverages local LLM prompting to suggest question variations, generate alternative phrasing, and auto-evaluate cognitive levels.
+- **Outcome Matrix Mapping:** Bind questions directly to Course Outcomes (COs) and Program Outcomes (POs) to simplify compliance reporting.
+
+### 🛡️ For HODs, COEs, & Admins
+- **Validation Sidebar Widget:** A real-time analytics panel that tracks marks accumulation, difficulty splits, and CO coverage during paper creation.
+- **Review & Approval Gateways:** Enforces peer-review workflows where questions must pass Expert and HOD reviews before entering the active bank.
+- **Contextual Access Controls (RBAC):** Restricts data access strictly to assigned subjects, preventing faculty from viewing or modifying unauthorized resources.
+- **Sovereign Audit Trails:** Logs administrative actions (approvals, locks, exports) with cryptographic signatures to ensure non-repudiation.
+
+### 🖨️ Multi-Format Document Compilation
+- **Standardized Word (.docx):** Compiles exam layouts into Word documents containing institutional header tables, instructions, and section dividers.
+- **Compileable LaTeX Source (.tex):** Generates clean LaTeX documents with properly escaped special characters and formatted equations.
+- **Secure PDF Export:** Produces print-ready PDFs matching standard university examination templates.
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Component | Technology | Description |
-| :--- | :--- | :--- |
-| **Frontend** | React 18 (Vite) | Main client-side single page app framework |
-| **Styling** | Material-UI (MUI) v5 + CSS | Sleek theme components & layout control |
-| **Rich Editor** | EditorJS + MathJax | Text, table, and LaTeX equation construction |
-| **Backend** | Flask (Python 3.11) | RESTful API and core routing framework |
-| **Database** | PostgreSQL & SQLite | Managed Neon DB (Production) / Local SQLite (Development) |
-| **ORM** | SQLAlchemy | Declarative database relationship management |
-| **Auth** | Flask-JWT-Extended | Secure token authentication & payload validation |
-| **Deployment** | Vercel & Render | Automated client/server hosting environments |
+*   **Frontend SPA:** React 18 (Vite build tool)
+*   **Component Styling:** Material-UI (MUI) v5 + CSS
+*   **Rich Text Editor:** EditorJS + MathJax v3 rendering
+*   **Core Backend:** Flask (Python 3.11)
+*   **ORM Integration:** SQLAlchemy + Flask-Migrate
+*   **Session Security:** Flask-JWT-Extended (Token-based auth)
+*   **Database Engine:** PostgreSQL (Neon Serverless in production)
+*   **API Protocols:** REST (stateless CRUD) and GraphQL (dashboard reporting)
+
+---
+
+## 📂 Codebase Directory Layout
+
+### Frontend Source Structure (`src/`)
+- [src/App.jsx](file:///C:/Users/muzam/Desktop/qpgs-ui/src/App.jsx): Main router defining layout access rules for HOD, COE, Admin, and Faculty roles.
+- [src/theme.js](file:///C:/Users/muzam/Desktop/qpgs-ui/src/theme.js): Material-UI global configuration defining layout palettes and typography.
+- [src/components/](file:///C:/Users/muzam/Desktop/qpgs-ui/src/components):
+  - [EditorJSEditor.jsx](file:///C:/Users/muzam/Desktop/qpgs-ui/src/components/EditorJSEditor.jsx): Integrated EditorJS layout with math block extensions.
+  - [Navbar.jsx](file:///C:/Users/muzam/Desktop/qpgs-ui/src/components/Navbar.jsx) & [Sidebar.jsx](file:///C:/Users/muzam/Desktop/qpgs-ui/src/components/Sidebar.jsx): Navigation layouts.
+  - [ProtectedRoute.jsx](file:///C:/Users/muzam/Desktop/qpgs-ui/src/components/ProtectedRoute.jsx): Guard component verifying token authorizations before rendering views.
+- [src/services/api.js](file:///C:/Users/muzam/Desktop/qpgs-ui/src/services/api.js): Axios interceptor configuring token authorization headers, rate limiters, and retry logic.
+- [src/pages/](file:///C:/Users/muzam/Desktop/qpgs-ui/src/pages):
+  - [Home.jsx](file:///C:/Users/muzam/Desktop/qpgs-ui/src/pages/Home.jsx): Landing page.
+  - **admin/**: Admin dashboards including [ComposePaper.jsx](file:///C:/Users/muzam/Desktop/qpgs-ui/src/pages/admin/ComposePaper.jsx) and [AssignmentManager.jsx](file:///C:/Users/muzam/Desktop/qpgs-ui/src/pages/admin/AssignmentManager.jsx).
+  - **faculty/**: Faculty dashboards including [CreateQuestion.jsx](file:///C:/Users/muzam/Desktop/qpgs-ui/src/pages/faculty/CreateQuestion.jsx) and [ReviewQuestion.jsx](file:///C:/Users/muzam/Desktop/qpgs-ui/src/pages/faculty/ReviewQuestion.jsx).
+
+### Backend Source Structure (`backend/`)
+- [backend/app/__init__.py](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/__init__.py): Initializer configuring Blueprints, database connections, CORS rules, and rate limits.
+- [backend/app/models.py](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/models.py): Relational database models (AcademicYear, Subject, User, FacultyAssignment, CourseOutcome, Question, Paper, Section, PaperQuestion, QuestionUsage, AILog, SystemSetting, QuestionReviewStep).
+- [backend/app/routes/](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/routes):
+  - [auth.py](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/routes/auth.py): Logins, registrations, permissions, and JWT token issuing.
+  - [questions.py](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/routes/questions.py): Question management, search indexes, filters, and approvals.
+  - [papers.py](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/routes/papers.py): Composing, validation, and document export endpoints.
+  - [ai.py](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/routes/ai.py): LLM prompting endpoints.
+- [backend/app/services/](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/services):
+  - [ai_provider.py](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/services/ai_provider.py): Local/Cloud inference abstractions.
+  - [export_service.py](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/services/export_service.py): Compiles JSON fields into `.docx` and `.tex` formats.
+  - [validation_service.py](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/services/validation_service.py): Exam paper validation rules.
+  - [rbac_service.py](file:///C:/Users/muzam/Desktop/qpgs-ui/backend/app/services/rbac_service.py): Core authorization utility.
 
 ---
 
@@ -164,34 +123,30 @@ sequenceDiagram
 ### Prerequisites
 - Node.js (v18+)
 - Python (v3.11+)
-- PostgreSQL (Local instance or Neon Cloud connection URL)
+- PostgreSQL (Local instance or Neon connection string)
 
-### 1. Clone the Repository
+### 1. Clone & Navigate
 ```bash
 git clone https://github.com/Muzammil0777/QPDS-UI.git
 cd QPDS-UI
 ```
 
-### 2. Backend Setup
+### 2. Backend Environment Setup
 ```bash
-# Navigate to backend directory
 cd backend
-
-# Create and activate a virtual environment
 python -m venv venv
 
-# Windows (Command Prompt / PowerShell)
+# Windows
 .\venv\Scripts\activate
 
-# Linux / Mac OS
+# Linux / MacOS
 source venv/bin/activate
 
-# Install required dependencies
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-**Configure Environment Variables:**
-Create a file named `.env` in the root of the `backend` directory:
+Create a `.env` configuration file in the `backend` directory:
 ```env
 DATABASE_URL=postgresql://user:password@localhost:5432/qpds_db
 SECRET_KEY=your_secure_jwt_secret_key_here
@@ -200,38 +155,30 @@ GEMINI_API_KEY=your_google_gemini_api_key
 HF_API_KEY=your_huggingface_api_token
 ```
 
-**Initialize Database Migration & Create Admin:**
+Initialize the database schema and run seed scripts:
 ```bash
-# Run database migrations to construct tables
 flask db upgrade
-
-# Create the initial seed administrator user
 python create_admin.py
 ```
 
-**Run Backend Development Server:**
+Start the API server:
 ```bash
 flask run
 ```
-The backend API will start running at `http://127.0.0.1:5000`.
+The API server runs locally at `http://127.0.0.1:5000`.
 
-### 3. Frontend Setup
+### 3. Frontend Interface Setup
 Open a new terminal window in the root directory (`QPDS-UI`):
 ```bash
-# Install frontend package dependencies
 npm install
-
-# Run frontend development server
 npm start
 ```
-The React development server will start and open your web browser automatically at `http://localhost:3000`.
+The frontend development server will launch and open the web browser automatically at `http://localhost:3000`.
 
 ---
 
-## 🧪 Running Tests
-The backend features integration tests for checking system features, BOLA/IDOR security mechanisms, exports, and pagination limits.
-
-To run the backend test suite:
+## 🧪 Testing Workflows
+To run the integration test suite covering RBAC permissions, validation constraints, and document compilation routes:
 ```bash
 cd backend
 python -m pytest
@@ -239,25 +186,6 @@ python -m pytest
 
 ---
 
-## ☁️ Cloud Deployment
-
-### Backend (Render)
-- **Environment:** Python 3
-- **Build Command:** `pip install -r requirements.txt`
-- **Start Command:** `flask db upgrade && gunicorn run:app`
-- **Configured Env Vars:** `DATABASE_URL` (Neon Postgres Connection), `SECRET_KEY`, `GEMINI_API_KEY`, `HF_API_KEY`.
-
-### Frontend (Vercel)
-- **Framework Preset:** Vite
-- **Build Command:** `npm run build`
-- **Output Directory:** `dist`
-- **Configured Env Vars:** `VITE_API_URL` pointing to your deployed Render URL.
-
----
-
 ## 👥 Contributors
 
 Built by the students of M.S. Ramaiah University as part of the Question Paper Design System initiative.
-
----
-*Note: For the admin login credentials in the live demo, please contact the repository owner.*
